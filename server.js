@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const port = Number(process.env.PORT || 4178);
@@ -36,6 +36,11 @@ function createRoom(id = makeRoomId()) {
       id,
       createdAt: new Date().toISOString(),
       context: null,
+      status: {
+        stage: "issued",
+        message: "Room number issued. Waiting for the agent prompt to be copied.",
+        progress: 12
+      },
       clients: new Set(),
       events: []
     });
@@ -43,13 +48,19 @@ function createRoom(id = makeRoomId()) {
   return rooms.get(id);
 }
 
+function createNewRoom() {
+  let id = makeRoomId();
+  while (rooms.has(id)) id = makeRoomId();
+  return createRoom(id);
+}
+
 function makeRoomId() {
-  return `${randomUUID().slice(0, 8)}-${randomUUID().slice(0, 4)}`;
+  return String(randomInt(100000, 1000000));
 }
 
 function roomIdFromPath(pathname, suffix = "") {
   const escapedSuffix = suffix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = pathname.match(new RegExp(`^/api/build-room/([a-zA-Z0-9-]{8,80})${escapedSuffix}$`));
+  const match = pathname.match(new RegExp(`^/api/build-room/([a-zA-Z0-9-]{4,80})${escapedSuffix}$`));
   return match?.[1] || null;
 }
 
@@ -76,6 +87,59 @@ function sendEvent(room, type, payload) {
   for (const client of room.clients) {
     client.write(wire);
   }
+}
+
+function updateRoomStatus(room, input) {
+  const status = {
+    stage: input.stage || room.status.stage || "working",
+    message: input.message,
+    progress: Number.isFinite(input.progress) ? Math.max(0, Math.min(100, input.progress)) : room.status.progress,
+    detail: input.detail || null
+  };
+  room.status = status;
+  sendEvent(room, "status", status);
+  return status;
+}
+
+function validateStatus(input) {
+  const allowedStages = new Set([
+    "issued",
+    "copied",
+    "agent-started",
+    "gathering",
+    "approval-needed",
+    "approved",
+    "validating",
+    "generating",
+    "complete",
+    "error"
+  ]);
+  const errors = [];
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return { ok: false, errors: ["Payload must be a JSON object."] };
+  }
+  if (typeof input.message !== "string" || input.message.trim().length < 3 || input.message.trim().length > 240) {
+    errors.push("message must be a string between 3 and 240 characters.");
+  }
+  if (input.stage !== undefined && (!allowedStages.has(input.stage))) {
+    errors.push(`stage must be one of: ${Array.from(allowedStages).join(", ")}.`);
+  }
+  if (input.progress !== undefined && (!Number.isFinite(Number(input.progress)) || Number(input.progress) < 0 || Number(input.progress) > 100)) {
+    errors.push("progress must be a number from 0 to 100.");
+  }
+  if (input.detail !== undefined && typeof input.detail !== "string") {
+    errors.push("detail must be a string when provided.");
+  }
+  if (errors.length) return { ok: false, errors };
+  return {
+    ok: true,
+    data: {
+      message: input.message.trim(),
+      stage: input.stage,
+      progress: input.progress === undefined ? undefined : Number(input.progress),
+      detail: input.detail ? input.detail.trim() : undefined
+    }
+  };
 }
 
 async function readJsonBody(req) {
@@ -239,8 +303,15 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === "POST" && url.pathname === "/api/build-room") {
-    const room = createRoom();
-    sendJson(res, 201, { ok: true, roomId: room.id, eventsUrl: `/api/build-room/${room.id}/events` });
+    const room = createNewRoom();
+    sendJson(res, 201, {
+      ok: true,
+      roomId: room.id,
+      roomUrl: `/room/${room.id}`,
+      eventsUrl: `/api/build-room/${room.id}/events`,
+      statusUrl: `/api/build-room/${room.id}/status`,
+      contextUrl: `/api/build-room/${room.id}/context`
+    });
     return;
   }
 
@@ -259,7 +330,10 @@ const server = createServer(async (req, res) => {
       "access-control-allow-origin": "*",
       "x-accel-buffering": "no"
     });
-    res.write(`event: ready\ndata: ${JSON.stringify({ type: "ready", payload: { roomId: room.id, createdAt: room.createdAt } })}\n\n`);
+    res.write(`event: ready\ndata: ${JSON.stringify({ type: "ready", payload: { roomId: room.id, createdAt: room.createdAt, status: room.status } })}\n\n`);
+    if (room.status) {
+      res.write(`event: status\ndata: ${JSON.stringify({ type: "status", payload: room.status })}\n\n`);
+    }
     if (room.context) {
       res.write(`event: context\ndata: ${JSON.stringify({ type: "context", payload: room.context })}\n\n`);
     }
@@ -271,7 +345,25 @@ const server = createServer(async (req, res) => {
   const contextRoomId = roomIdFromPath(url.pathname, "/context");
   if (req.method === "GET" && contextRoomId) {
     const room = createRoom(contextRoomId);
-    sendJson(res, 200, { ok: true, roomId: room.id, context: room.context, schemaExample });
+    sendJson(res, 200, { ok: true, roomId: room.id, status: room.status, context: room.context, schemaExample });
+    return;
+  }
+
+  const statusRoomId = roomIdFromPath(url.pathname, "/status");
+  if (req.method === "POST" && statusRoomId) {
+    const room = createRoom(statusRoomId);
+    try {
+      const body = await readJsonBody(req);
+      const validation = validateStatus(body);
+      if (!validation.ok) {
+        sendJson(res, 422, { ok: false, errors: validation.errors });
+        return;
+      }
+      const status = updateRoomStatus(room, validation.data);
+      sendJson(res, 202, { ok: true, roomId: room.id, status });
+    } catch (error) {
+      sendJson(res, error.status || 500, { ok: false, error: error.message });
+    }
     return;
   }
 
@@ -279,18 +371,21 @@ const server = createServer(async (req, res) => {
     const room = createRoom(contextRoomId);
     try {
       const body = await readJsonBody(req);
+      updateRoomStatus(room, { stage: "validating", message: "Agent payload received. Validating strict schema.", progress: 68 });
       const validation = validateContext(body);
       if (!validation.ok) {
+        updateRoomStatus(room, { stage: "error", message: "Agent payload failed schema validation.", progress: 42 });
         sendEvent(room, "error", { message: "Agent payload failed schema validation.", errors: validation.errors });
         sendJson(res, 422, { ok: false, errors: validation.errors, schemaExample });
         return;
       }
+      updateRoomStatus(room, { stage: "generating", message: "Schema passed. Generating the personal website preview.", progress: 84 });
       room.context = {
         ...validation.data,
         receivedAt: new Date().toISOString()
       };
-      sendEvent(room, "status", { message: "Approved personal context received." });
       sendEvent(room, "context", room.context);
+      updateRoomStatus(room, { stage: "complete", message: `Website generated for ${room.context.name}.`, progress: 100 });
       sendJson(res, 202, { ok: true, roomId: room.id, accepted: room.context });
     } catch (error) {
       sendJson(res, error.status || 500, { ok: false, error: error.message });
@@ -298,7 +393,7 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && /^\/room\/[a-zA-Z0-9-]{8,80}$/.test(url.pathname)) {
+  if (req.method === "GET" && /^\/room\/[a-zA-Z0-9-]{4,80}$/.test(url.pathname)) {
     await serveStatic(res, "/");
     return;
   }

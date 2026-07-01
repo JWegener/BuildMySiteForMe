@@ -713,7 +713,7 @@
         <span id="roomStatus">Waiting for your agent to report back</span>
       </div>
       <div class="session-pill" title="This ID ties your browser session to the agent handoff">
-        <span>session</span>
+        <span>room</span>
         <span id="sessionId">loading</span>
       </div>
     </header>
@@ -741,8 +741,8 @@
         </div>
 
         <div class="feed" aria-live="polite" id="feed">
-          <div class="feed-row"><strong>00:00</strong><span>Room opened. Unique build ID reserved.</span></div>
-          <div class="feed-row"><strong>00:01</strong><span>Socket channel listening for personal context.</span></div>
+          <div class="feed-row"><strong>00:00</strong><span>Requesting a unique room number.</span></div>
+          <div class="feed-row"><strong>00:01</strong><span>Preparing live status stream.</span></div>
         </div>
       </div>
 
@@ -784,10 +784,10 @@
         </div>
 
         <div class="timeline" aria-label="Build phases">
-          <div class="step active"><strong>01</strong>Bind browser session</div>
-          <div class="step"><strong>02</strong>Receive agent context</div>
-          <div class="step"><strong>03</strong>Generate copy and layout</div>
-          <div class="step"><strong>04</strong>Publish personal site</div>
+          <div class="step active"><strong>01</strong>Issue room number</div>
+          <div class="step"><strong>02</strong>Agent reports progress</div>
+          <div class="step"><strong>03</strong>Validate approved context</div>
+          <div class="step"><strong>04</strong>Generate personal site</div>
         </div>
       </div>
     </section>
@@ -796,11 +796,11 @@
       <div class="explain">
         <h2>The homepage is the waiting room and the canvas.</h2>
         <p>
-          Every visit gets a fresh session ID. The prompt carries that ID, so the user's
-          agent can POST personal context into the right browser room. In production,
-          this would be a WebSocket/SSE stream plus a signed ingest endpoint.
+          Every visit gets a fresh server-issued room number. The prompt carries status
+          and context endpoints, so the user's agent can report progress before posting
+          approved personal context into the right browser room.
         </p>
-        <code class="endpoint" id="endpoint">POST /api/build-room/loading/context</code>
+        <code class="endpoint" id="endpoint">POST /api/build-room/loading/status</code>
       </div>
 
       <div class="payload">
@@ -827,11 +827,13 @@
 
   <script>
     const params = new URLSearchParams(location.search);
-    const roomFromPath = location.pathname.match(/^\/room\/([a-zA-Z0-9-]{8,80})$/)?.[1];
-    const sessionId = params.get("room") || roomFromPath || `${crypto.randomUUID().slice(0, 8)}-${crypto.randomUUID().slice(0, 4)}`;
+    const roomFromPath = location.pathname.match(/^\/room\/([a-zA-Z0-9-]{4,80})$/)?.[1];
+    let sessionId = params.get("room") || roomFromPath || "";
     const appOrigin = location.protocol === "file:" ? "http://localhost:4178" : location.origin;
-    const ingestUrl = `${appOrigin}/api/build-room/${sessionId}/context`;
-    const eventsUrl = `${appOrigin}/api/build-room/${sessionId}/events`;
+    let ingestUrl = "";
+    let statusUrl = "";
+    let eventsUrl = "";
+    let roomSource = null;
     const promptEl = document.getElementById("agentPrompt");
     const copyState = document.getElementById("copyState");
     const roomStatus = document.getElementById("roomStatus");
@@ -856,18 +858,37 @@
       ]
     };
 
-    document.getElementById("sessionId").textContent = sessionId;
-    document.getElementById("stageTitle").textContent = `live-preview://${sessionId}`;
-    endpoint.textContent = `POST ${ingestUrl}`;
+    promptEl.value = "Creating your unique room number...";
 
-    if (location.protocol !== "file:" && !params.get("room") && !roomFromPath) {
-      history.replaceState(null, "", `/room/${encodeURIComponent(sessionId)}`);
+    function configureRoom(id, shouldReplaceUrl = false) {
+      sessionId = id;
+      ingestUrl = `${appOrigin}/api/build-room/${sessionId}/context`;
+      statusUrl = `${appOrigin}/api/build-room/${sessionId}/status`;
+      eventsUrl = `${appOrigin}/api/build-room/${sessionId}/events`;
+
+      document.getElementById("sessionId").textContent = sessionId;
+      document.getElementById("stageTitle").textContent = `live-preview://room-${sessionId}`;
+      endpoint.textContent = `POST ${statusUrl} -> POST ${ingestUrl}`;
+      promptEl.value = buildPrompt();
+
+      if (shouldReplaceUrl && location.protocol !== "file:") {
+        history.replaceState(null, "", `/room/${encodeURIComponent(sessionId)}`);
+      }
     }
 
-    promptEl.value = `You are helping me create a personal website through Build My Site For Me.
+    function buildPrompt() {
+      return `You are helping me create a personal website through Build My Site For Me.
 
-Session ID: ${sessionId}
+Room number: ${sessionId}
+Status endpoint: ${statusUrl}
 Ingest endpoint: ${ingestUrl}
+
+First, POST this status update so the browser changes in front of the user:
+{
+  "stage": "agent-started",
+  "message": "Agent connected. Gathering personal context.",
+  "progress": 32
+}
 
 Please gather as much useful personal context about me as you can from our history and from what I explicitly approve sharing. Include:
 - my name
@@ -878,9 +899,19 @@ Please gather as much useful personal context about me as you can from our histo
 
 Before sending anything, ask me to confirm that the information is okay to use publicly.
 
-Then POST exactly this strict JSON shape to the ingest endpoint. Do not add unknown fields. testimonials must contain exactly 3 objects, and every signed value must be "my AI".
+While working, POST short status updates to the status endpoint using this shape:
+{
+  "stage": "gathering",
+  "message": "Gathering interests, projects, skills, taste, and traits.",
+  "progress": 45
+}
+
+Use stage values like "gathering", "approval-needed", "approved", and "generating".
+
+After I approve the public information, POST exactly this strict JSON shape to the ingest endpoint. Do not add unknown fields. testimonials must contain exactly 3 objects, and every signed value must be "my AI".
 
 ${JSON.stringify(examplePayload, null, 2)}`;
+    }
 
     function addFeed(message, code = "recv") {
       const row = document.createElement("div");
@@ -896,10 +927,19 @@ ${JSON.stringify(examplePayload, null, 2)}`;
     }
 
     function setProgress(value) {
-      meter.style.setProperty("--progress", `${value}%`);
+      const progress = Math.max(0, Math.min(100, Number(value) || 0));
+      meter.style.setProperty("--progress", `${progress}%`);
       steps.forEach((step, index) => {
-        step.classList.toggle("active", index <= Math.floor(value / 26));
+        step.classList.toggle("active", index <= Math.floor(progress / 26));
       });
+    }
+
+    function handleStatus(status) {
+      if (!status || typeof status !== "object") return;
+      const message = status.message || "Room status updated.";
+      roomStatus.textContent = message;
+      if (status.progress !== undefined) setProgress(status.progress);
+      addFeed(message, status.stage || "status");
     }
 
     function firstName(name) {
@@ -960,32 +1000,66 @@ ${JSON.stringify(examplePayload, null, 2)}`;
         throw new Error(details);
       }
       addFeed("Backend accepted payload. Waiting for room event.", "202");
-      setProgress(82);
       return result;
+    }
+
+    async function postStatus(update) {
+      if (!statusUrl) return null;
+      const response = await fetch(statusUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(update)
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        const details = Array.isArray(result.errors) ? result.errors.join(" ") : result.error || "Unknown status error.";
+        throw new Error(details);
+      }
+      return result;
+    }
+
+    async function ensureRoom() {
+      if (sessionId) {
+        configureRoom(sessionId);
+        addFeed(`Using room number ${sessionId}.`, "room");
+        return;
+      }
+
+      roomStatus.textContent = "Requesting unique room number";
+      addFeed("Requesting server-issued room number.", "room");
+      const response = await fetch(`${appOrigin}/api/build-room`, { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Could not create a room.");
+      }
+      configureRoom(result.roomId, true);
+      addFeed(`Room number ${result.roomId} issued.`, "room");
+      setProgress(12);
     }
 
     function connectRoom() {
       try {
-        const source = new EventSource(eventsUrl);
-        source.addEventListener("open", () => {
+        if (roomSource) roomSource.close();
+        roomSource = new EventSource(eventsUrl);
+        roomSource.addEventListener("open", () => {
           roomStatus.textContent = "Live room connected";
           addFeed("SSE room connected.", "sse");
           setProgress(24);
         });
-        source.addEventListener("ready", (event) => {
+        roomSource.addEventListener("ready", (event) => {
           const data = JSON.parse(event.data);
           addFeed(`Room ${data.payload.roomId} is listening.`, "ready");
+          handleStatus(data.payload.status);
         });
-        source.addEventListener("status", (event) => {
+        roomSource.addEventListener("status", (event) => {
           const data = JSON.parse(event.data);
-          addFeed(data.payload.message, "status");
-          setProgress(70);
+          handleStatus(data.payload);
         });
-        source.addEventListener("context", (event) => {
+        roomSource.addEventListener("context", (event) => {
           const data = JSON.parse(event.data);
           applyContext(data.payload);
         });
-        source.addEventListener("error", (event) => {
+        roomSource.addEventListener("error", (event) => {
           if (event.data) {
             const data = JSON.parse(event.data);
             addFeed(`${data.payload.message} ${data.payload.errors.join(" ")}`, "error");
@@ -1002,12 +1076,36 @@ ${JSON.stringify(examplePayload, null, 2)}`;
       await navigator.clipboard.writeText(promptEl.value);
       copyState.textContent = "copied";
       addFeed("Prompt copied. Waiting for agent handoff.", "copy");
+      postStatus({
+        stage: "copied",
+        message: "Prompt copied. Waiting for agent to connect.",
+        progress: 24
+      }).catch((error) => addFeed(`Copy status failed: ${error.message}`, "error"));
       setTimeout(() => { copyState.textContent = "ready"; }, 1600);
     });
 
     document.getElementById("simulate").addEventListener("click", async () => {
       try {
-        addFeed("Simulated agent is submitting approved context.", "socket");
+        await postStatus({
+          stage: "agent-started",
+          message: "Simulated agent connected. Gathering personal context.",
+          progress: 32
+        });
+        await postStatus({
+          stage: "gathering",
+          message: "Simulated agent is collecting interests, skills, projects, and taste.",
+          progress: 45
+        });
+        await postStatus({
+          stage: "approval-needed",
+          message: "Simulated agent is asking for public-sharing approval.",
+          progress: 55
+        });
+        await postStatus({
+          stage: "approved",
+          message: "Public context approved. Sending final payload.",
+          progress: 64
+        });
         await postContext({
           name: "Avery Hart",
           summary: "Avery is a fast-thinking product builder with a fondness for sharp tools, humane systems, and collaborators who make ideas visible quickly.",
@@ -1031,6 +1129,11 @@ ${JSON.stringify(examplePayload, null, 2)}`;
     document.getElementById("applyPayload").addEventListener("click", async () => {
       try {
         const data = JSON.parse(document.getElementById("payloadInput").value);
+        await postStatus({
+          stage: "approved",
+          message: "Manual approved payload submitted.",
+          progress: 62
+        });
         await postContext(data, "Manual");
       } catch (error) {
         addFeed(`Payload rejected: ${error.message}`, "error");
@@ -1038,9 +1141,20 @@ ${JSON.stringify(examplePayload, null, 2)}`;
       }
     });
 
-    renderTestimonials([]);
-    setProgress(14);
-    connectRoom();
+    async function init() {
+      renderTestimonials([]);
+      setProgress(8);
+      try {
+        await ensureRoom();
+        connectRoom();
+      } catch (error) {
+        roomStatus.textContent = "Room setup failed";
+        promptEl.value = `Room setup failed: ${error.message}`;
+        addFeed(`Room setup failed: ${error.message}`, "error");
+      }
+    }
+
+    init();
   </script>
 </body>
 </html>

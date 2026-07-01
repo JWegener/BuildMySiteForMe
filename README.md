@@ -1,6 +1,6 @@
 # Build My Site For Me
 
-A live personal-site builder. A visitor opens a room, copies a prompt into their AI agent, and the agent POSTs approved personal context back to the room. The website updates over Server-Sent Events while the user watches.
+A live personal-site builder. A visitor opens a room, gets a unique room number, copies a prompt into their AI agent, and the agent POSTs progress plus approved personal context back to that room. The website updates over Server-Sent Events while the user watches.
 
 ## Run locally
 
@@ -22,7 +22,13 @@ https://build-my-site-for-me.onrender.com/
 
 ## API
 
-Create/use a room:
+Create a room:
+
+```text
+POST /api/build-room
+```
+
+Open/use a room:
 
 ```text
 GET /room/:roomId
@@ -32,6 +38,22 @@ Stream room events:
 
 ```text
 GET /api/build-room/:roomId/events
+```
+
+Send live status:
+
+```text
+POST /api/build-room/:roomId/status
+```
+
+Status payload shape:
+
+```json
+{
+  "stage": "gathering",
+  "message": "Gathering interests, projects, skills, taste, and traits.",
+  "progress": 45
+}
 ```
 
 Submit approved context:
