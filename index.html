@@ -1,0 +1,1046 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Build My Site For Me</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f5f1e8;
+      --muted: #b8b2a6;
+      --subtle: #81796d;
+      --carbon: #151515;
+      --panel: #1d1d1a;
+      --panel-2: #24241f;
+      --line: rgba(245, 241, 232, 0.16);
+      --mint: #00f0c8;
+      --green: #a8ff3e;
+      --coral: #ff6b53;
+      --amber: #ffc857;
+      --sky: #60d8ff;
+      --shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: #111;
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(245,241,232,0.035) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(245,241,232,0.035) 1px, transparent 1px),
+        radial-gradient(circle at 18% 12%, rgba(255, 107, 83, 0.16), transparent 26rem),
+        radial-gradient(circle at 86% 26%, rgba(0, 240, 200, 0.13), transparent 29rem),
+        linear-gradient(135deg, #20201d 0%, #111 48%, #171713 100%);
+      background-size: 48px 48px, 48px 48px, auto, auto, auto;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.17;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.62'/%3E%3C/svg%3E");
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .shell {
+      width: min(1440px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 24px;
+    }
+
+    .topbar {
+      min-height: 44px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      max-width: 100%;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(21px, 2vw, 30px);
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .brand span:last-child {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      color: #111;
+      background: var(--green);
+      border: 2px solid rgba(17, 17, 17, 0.7);
+      box-shadow: 5px 5px 0 var(--coral);
+      font-family: "Courier New", monospace;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .status-strip {
+      justify-self: center;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      max-width: 100%;
+      padding: 9px 12px;
+      color: var(--muted);
+      background: rgba(17, 17, 17, 0.6);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 12px;
+    }
+
+    .status-strip span:last-child {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pulse {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--mint);
+      box-shadow: 0 0 0 0 rgba(0, 240, 200, 0.7);
+      animation: ping 1.8s infinite;
+    }
+
+    @keyframes ping {
+      70% { box-shadow: 0 0 0 10px rgba(0, 240, 200, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(0, 240, 200, 0); }
+    }
+
+    .session-pill {
+      justify-self: end;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      max-width: 100%;
+      padding: 9px 12px;
+      color: var(--ink);
+      background: rgba(255, 200, 87, 0.12);
+      border: 1px solid rgba(255, 200, 87, 0.34);
+      border-radius: 999px;
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+    }
+
+    .session-pill span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .hero {
+      min-height: calc(100vh - 96px);
+      display: grid;
+      grid-template-columns: minmax(340px, 0.86fr) minmax(460px, 1.14fr);
+      gap: 24px;
+      align-items: stretch;
+      padding: 34px 0 24px;
+    }
+
+    .handoff {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 620px;
+      padding: clamp(20px, 3vw, 34px);
+      background: rgba(20, 20, 18, 0.88);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .handoff::after {
+      content: "";
+      position: absolute;
+      inset: auto 24px 0 24px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--coral), var(--amber), var(--mint), var(--sky));
+    }
+
+    .eyebrow {
+      color: var(--mint);
+      font-family: "Courier New", monospace;
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 11ch;
+      margin: 18px 0 16px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(52px, 7vw, 102px);
+      line-height: 0.88;
+      font-weight: 700;
+    }
+
+    .lede {
+      max-width: 62ch;
+      margin: 0 0 26px;
+      color: var(--muted);
+      font-size: clamp(16px, 1.7vw, 20px);
+      line-height: 1.55;
+    }
+
+    .prompt-card {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 16px;
+      background: #111;
+      border: 1px solid rgba(0, 240, 200, 0.32);
+      border-radius: var(--radius);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+    }
+
+    .prompt-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--subtle);
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 188px;
+      resize: vertical;
+      border: 0;
+      outline: 0;
+      color: var(--mint);
+      background: transparent;
+      font-family: "Courier New", monospace;
+      font-size: clamp(14px, 1.45vw, 17px);
+      line-height: 1.55;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .primary,
+    .ghost {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 15px;
+      border-radius: 6px;
+      font-weight: 700;
+      transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .primary {
+      color: #111;
+      background: var(--green);
+    }
+
+    .ghost {
+      color: var(--ink);
+      background: rgba(245, 241, 232, 0.09);
+      border: 1px solid var(--line);
+    }
+
+    .primary:hover,
+    .ghost:hover {
+      transform: translateY(-2px);
+    }
+
+    .feed {
+      display: grid;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 22px;
+      color: var(--muted);
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+    }
+
+    .feed-row {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 10px;
+      padding: 9px 0;
+      border-top: 1px dashed rgba(245, 241, 232, 0.14);
+    }
+
+    .feed-row strong {
+      color: var(--amber);
+      font-weight: 400;
+    }
+
+    .stage {
+      position: relative;
+      min-height: 620px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      background: rgba(245, 241, 232, 0.08);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .stage-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 56px;
+      padding: 0 16px;
+      background: rgba(17, 17, 17, 0.82);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .traffic {
+      display: flex;
+      gap: 8px;
+    }
+
+    .traffic i {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: block;
+    }
+
+    .traffic i:nth-child(1) { background: var(--coral); }
+    .traffic i:nth-child(2) { background: var(--amber); }
+    .traffic i:nth-child(3) { background: var(--mint); }
+
+    .stage-title {
+      min-width: 0;
+      color: var(--muted);
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .build-meter {
+      width: 138px;
+      height: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(245, 241, 232, 0.22);
+      border-radius: 999px;
+      background: #111;
+    }
+
+    .build-meter span {
+      display: block;
+      width: var(--progress, 10%);
+      height: 100%;
+      background: linear-gradient(90deg, var(--coral), var(--amber), var(--mint));
+      transition: width 500ms ease;
+    }
+
+    .site-preview {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(220px, 0.78fr) minmax(280px, 1.22fr);
+      gap: clamp(16px, 2vw, 30px);
+      padding: clamp(20px, 4vw, 48px);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0)),
+        #eee7d5;
+      color: #17130f;
+    }
+
+    .portrait {
+      min-height: 100%;
+      display: grid;
+      align-content: end;
+      gap: 18px;
+      padding: 22px;
+      color: #f5f1e8;
+      background:
+        linear-gradient(160deg, rgba(0,0,0,0), rgba(0,0,0,0.48)),
+        linear-gradient(135deg, #ff6b53, #ffc857 48%, #00f0c8);
+      border: 2px solid #17130f;
+      border-radius: var(--radius);
+      box-shadow: 10px 10px 0 #17130f;
+      overflow: hidden;
+    }
+
+    .portrait-art {
+      width: min(210px, 100%);
+      aspect-ratio: 1;
+      justify-self: center;
+      display: grid;
+      place-items: center;
+      border: 2px solid rgba(23, 19, 15, 0.5);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 35%, #f5f1e8 0 17%, transparent 18%),
+        radial-gradient(circle at 50% 74%, #17130f 0 25%, transparent 26%),
+        radial-gradient(circle at 50% 56%, rgba(245, 241, 232, 0.86) 0 37%, transparent 38%),
+        repeating-linear-gradient(45deg, rgba(23,19,15,.18) 0 8px, transparent 8px 16px);
+    }
+
+    .portrait h2 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(28px, 3.6vw, 52px);
+      line-height: 0.96;
+    }
+
+    .portrait p {
+      margin: 0;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .generated {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: clamp(16px, 2vw, 24px);
+    }
+
+    .generated nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .generated nav span {
+      padding: 7px 10px;
+      color: #17130f;
+      background: rgba(23, 19, 15, 0.08);
+      border: 1px solid rgba(23, 19, 15, 0.18);
+      border-radius: 999px;
+    }
+
+    .generated h2 {
+      max-width: 12ch;
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(44px, 6.2vw, 88px);
+      line-height: 0.9;
+    }
+
+    .generated p {
+      max-width: 64ch;
+      margin: 0;
+      color: #4b4037;
+      font-size: clamp(15px, 1.4vw, 18px);
+      line-height: 1.55;
+    }
+
+    .trait-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .trait {
+      min-height: 92px;
+      padding: 12px;
+      border: 1px solid rgba(23, 19, 15, 0.2);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.42);
+    }
+
+    .trait b {
+      display: block;
+      margin-bottom: 8px;
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+      color: #17130f;
+    }
+
+    .trait span {
+      color: #5d5044;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .quote-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .quote {
+      margin: 0;
+      padding: 14px;
+      color: #17130f;
+      background: rgba(23, 19, 15, 0.07);
+      border: 1px solid rgba(23, 19, 15, 0.18);
+      border-radius: var(--radius);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 17px;
+      line-height: 1.35;
+    }
+
+    .quote cite {
+      display: block;
+      margin-top: 9px;
+      color: #6b5d50;
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+      font-style: normal;
+      text-transform: uppercase;
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .step {
+      min-height: 78px;
+      padding: 10px;
+      color: var(--subtle);
+      background: rgba(17, 17, 17, 0.52);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .step.active {
+      color: var(--ink);
+      border-color: rgba(0, 240, 200, 0.5);
+      background: rgba(0, 240, 200, 0.1);
+    }
+
+    .step strong {
+      display: block;
+      color: var(--mint);
+      margin-bottom: 8px;
+    }
+
+    .below {
+      display: grid;
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: 24px;
+      padding: 10px 0 70px;
+      min-width: 0;
+    }
+
+    .explain,
+    .payload {
+      min-width: 0;
+      padding: 22px;
+      background: rgba(20, 20, 18, 0.8);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .explain h2,
+    .payload h2 {
+      margin: 0 0 12px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(27px, 3vw, 42px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+
+    .explain p,
+    .payload p {
+      color: var(--muted);
+      line-height: 1.55;
+      margin: 0 0 18px;
+    }
+
+    .endpoint {
+      display: block;
+      overflow-x: auto;
+      padding: 14px;
+      color: var(--mint);
+      background: #111;
+      border: 1px solid rgba(0, 240, 200, 0.26);
+      border-radius: var(--radius);
+      font-family: "Courier New", monospace;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .payload textarea {
+      min-height: 132px;
+      margin-bottom: 12px;
+      padding: 12px;
+      color: var(--ink);
+      background: #111;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    @media (max-width: 1060px) {
+      .topbar {
+        grid-template-columns: 1fr;
+        justify-items: start;
+      }
+
+      .status-strip,
+      .session-pill {
+        justify-self: start;
+      }
+
+      .hero,
+      .below {
+        grid-template-columns: 1fr;
+      }
+
+      .handoff,
+      .stage {
+        min-height: auto;
+      }
+
+      .stage {
+        min-height: 620px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        width: min(100vw - 22px, 680px);
+        padding-top: 16px;
+      }
+
+      .hero {
+        padding-top: 22px;
+      }
+
+      .site-preview {
+        grid-template-columns: 1fr;
+      }
+
+      .portrait {
+        min-height: 320px;
+      }
+
+      .trait-grid,
+      .timeline {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .stage-top {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 14px;
+      }
+
+      .build-meter {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 440px) {
+      .actions {
+        flex-direction: column;
+      }
+
+      .primary,
+      .ghost {
+        width: 100%;
+      }
+
+      .trait-grid,
+      .timeline {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar" aria-label="Site header">
+      <div class="brand">
+        <span class="brand-mark">B</span>
+        <span>Build My Site For Me</span>
+      </div>
+      <div class="status-strip">
+        <span class="pulse" aria-hidden="true"></span>
+        <span id="roomStatus">Waiting for your agent to report back</span>
+      </div>
+      <div class="session-pill" title="This ID ties your browser session to the agent handoff">
+        <span>session</span>
+        <span id="sessionId">loading</span>
+      </div>
+    </header>
+
+    <section class="hero" aria-label="Agent handoff and live website preview">
+      <div class="handoff">
+        <div class="eyebrow">One prompt, one live build room</div>
+        <h1>Your agent makes your personal website.</h1>
+        <p class="lede">
+          Open this page, copy the prompt, and hand it to your AI agent. The agent gathers
+          what it knows about you, sends it to this session, and your personal website
+          assembles here while you watch.
+        </p>
+
+        <div class="prompt-card">
+          <div class="prompt-head">
+            <span>Prompt to paste into your agent</span>
+            <span id="copyState">ready</span>
+          </div>
+          <textarea id="agentPrompt" spellcheck="false"></textarea>
+          <div class="actions">
+            <button class="primary" id="copyPrompt" type="button">Copy prompt</button>
+            <button class="ghost" id="simulate" type="button">Simulate agent handoff</button>
+          </div>
+        </div>
+
+        <div class="feed" aria-live="polite" id="feed">
+          <div class="feed-row"><strong>00:00</strong><span>Room opened. Unique build ID reserved.</span></div>
+          <div class="feed-row"><strong>00:01</strong><span>Socket channel listening for personal context.</span></div>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-top">
+          <div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="stage-title" id="stageTitle">live-preview://waiting-for-agent</div>
+          <div class="build-meter" aria-label="Build progress"><span id="meter"></span></div>
+        </div>
+
+        <div class="site-preview" id="sitePreview">
+          <aside class="portrait">
+            <div class="portrait-art" aria-hidden="true"></div>
+            <div>
+              <h2 id="previewName">Someone interesting</h2>
+              <p id="previewTagline">A website will appear here as soon as their agent checks in.</p>
+            </div>
+          </aside>
+
+          <section class="generated">
+            <nav aria-label="Generated website sections">
+              <span>About</span>
+              <span>Signals</span>
+              <span>Work</span>
+              <span>Contact</span>
+            </nav>
+            <h2 id="previewHeadline">Waiting for context.</h2>
+            <p id="previewBio">
+              The first payload should include a name, a who-I-am summary, interests,
+              projects, skills, taste, traits, and three quotes from "my AI."
+            </p>
+            <div class="trait-grid">
+              <div class="trait"><b>Interests</b><span id="traitInterests">Unassigned</span></div>
+              <div class="trait"><b>Skills</b><span id="traitSkills">Unassigned</span></div>
+              <div class="trait"><b>Taste</b><span id="traitTaste">Unassigned</span></div>
+            </div>
+            <div class="quote-grid" id="testimonialGrid" aria-label="AI testimonials"></div>
+          </section>
+        </div>
+
+        <div class="timeline" aria-label="Build phases">
+          <div class="step active"><strong>01</strong>Bind browser session</div>
+          <div class="step"><strong>02</strong>Receive agent context</div>
+          <div class="step"><strong>03</strong>Generate copy and layout</div>
+          <div class="step"><strong>04</strong>Publish personal site</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="below" aria-label="How the product works">
+      <div class="explain">
+        <h2>The homepage is the waiting room and the canvas.</h2>
+        <p>
+          Every visit gets a fresh session ID. The prompt carries that ID, so the user's
+          agent can POST personal context into the right browser room. In production,
+          this would be a WebSocket/SSE stream plus a signed ingest endpoint.
+        </p>
+        <code class="endpoint" id="endpoint">POST /api/build-room/loading/context</code>
+      </div>
+
+      <div class="payload">
+        <h2>Test the ingest shape.</h2>
+        <p>Drop a strict context payload here and POST it to this room, the same way an agent would.</p>
+        <textarea id="payloadInput" spellcheck="false">{
+  "name": "Maya Chen",
+  "summary": "Maya is a crisp, curious builder who likes fast iteration, direct answers, and tools that make her feel more capable without making a production out of it.",
+  "interests": ["AI tools", "small useful software", "design systems"],
+  "projects": ["A personal site generated live from agent context"],
+  "skills": ["product thinking", "prototyping", "writing"],
+  "taste": ["direct copy", "sharp contrast", "quietly playful details"],
+  "traits": ["high-signal", "warm operator mode", "fast-moving"],
+  "testimonials": [
+    { "quote": "Maya turns vague ideas into working buttons before the coffee cools.", "signed": "my AI" },
+    { "quote": "Extremely dangerous around an empty repo and a clear objective.", "signed": "my AI" },
+    { "quote": "Would debug a toaster if it had an API.", "signed": "my AI" }
+  ]
+}</textarea>
+        <button class="primary" id="applyPayload" type="button">Apply payload</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const roomFromPath = location.pathname.match(/^\/room\/([a-zA-Z0-9-]{8,80})$/)?.[1];
+    const sessionId = params.get("room") || roomFromPath || `${crypto.randomUUID().slice(0, 8)}-${crypto.randomUUID().slice(0, 4)}`;
+    const appOrigin = location.protocol === "file:" ? "http://localhost:4178" : location.origin;
+    const ingestUrl = `${appOrigin}/api/build-room/${sessionId}/context`;
+    const eventsUrl = `${appOrigin}/api/build-room/${sessionId}/events`;
+    const promptEl = document.getElementById("agentPrompt");
+    const copyState = document.getElementById("copyState");
+    const roomStatus = document.getElementById("roomStatus");
+    const feed = document.getElementById("feed");
+    const meter = document.getElementById("meter");
+    const endpoint = document.getElementById("endpoint");
+    const steps = Array.from(document.querySelectorAll(".step"));
+    const testimonialGrid = document.getElementById("testimonialGrid");
+
+    const examplePayload = {
+      name: "Maya Chen",
+      summary: "Maya is a crisp, curious builder who likes fast iteration, direct answers, and tools that make her feel more capable without making a production out of it.",
+      interests: ["AI tools", "small useful software", "design systems"],
+      projects: ["A personal site generated live from agent context"],
+      skills: ["product thinking", "prototyping", "writing"],
+      taste: ["direct copy", "sharp contrast", "quietly playful details"],
+      traits: ["high-signal", "warm operator mode", "fast-moving"],
+      testimonials: [
+        { quote: "Maya turns vague ideas into working buttons before the coffee cools.", signed: "my AI" },
+        { quote: "Extremely dangerous around an empty repo and a clear objective.", signed: "my AI" },
+        { quote: "Would debug a toaster if it had an API.", signed: "my AI" }
+      ]
+    };
+
+    document.getElementById("sessionId").textContent = sessionId;
+    document.getElementById("stageTitle").textContent = `live-preview://${sessionId}`;
+    endpoint.textContent = `POST ${ingestUrl}`;
+
+    if (location.protocol !== "file:" && !params.get("room") && !roomFromPath) {
+      history.replaceState(null, "", `/room/${encodeURIComponent(sessionId)}`);
+    }
+
+    promptEl.value = `You are helping me create a personal website through Build My Site For Me.
+
+Session ID: ${sessionId}
+Ingest endpoint: ${ingestUrl}
+
+Please gather as much useful personal context about me as you can from our history and from what I explicitly approve sharing. Include:
+- my name
+- a concise summary of who I am!
+- interests, projects, skills, and taste
+- 3-5 traits that would make a personal website feel unmistakably me
+- 3 humorous testimonial quotes about me signed by "my AI"
+
+Before sending anything, ask me to confirm that the information is okay to use publicly.
+
+Then POST exactly this strict JSON shape to the ingest endpoint. Do not add unknown fields. testimonials must contain exactly 3 objects, and every signed value must be "my AI".
+
+${JSON.stringify(examplePayload, null, 2)}`;
+
+    function addFeed(message, code = "recv") {
+      const row = document.createElement("div");
+      const stamp = document.createElement("strong");
+      const text = document.createElement("span");
+      const now = new Date();
+      row.className = "feed-row";
+      stamp.textContent = now.toLocaleTimeString([], { minute: "2-digit", second: "2-digit" });
+      text.textContent = `[${code}] ${message}`;
+      row.append(stamp, text);
+      feed.appendChild(row);
+      row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+
+    function setProgress(value) {
+      meter.style.setProperty("--progress", `${value}%`);
+      steps.forEach((step, index) => {
+        step.classList.toggle("active", index <= Math.floor(value / 26));
+      });
+    }
+
+    function firstName(name) {
+      return String(name || "Someone").split(/\s+/)[0] || "Someone";
+    }
+
+    function listText(items, fallback) {
+      return Array.isArray(items) && items.length ? items.join(", ") : fallback;
+    }
+
+    function renderTestimonials(items) {
+      testimonialGrid.textContent = "";
+      const quotes = Array.isArray(items) && items.length ? items : [
+        { quote: "Waiting for the agent to say something funny and oddly accurate.", signed: "my AI" }
+      ];
+      for (const item of quotes) {
+        const block = document.createElement("blockquote");
+        const cite = document.createElement("cite");
+        block.className = "quote";
+        block.textContent = `"${item.quote}"`;
+        cite.textContent = `- ${item.signed || "my AI"}`;
+        block.appendChild(cite);
+        testimonialGrid.appendChild(block);
+      }
+    }
+
+    function applyContext(data) {
+      const name = data.name || "Someone interesting";
+      const traits = Array.isArray(data.traits) ? data.traits : [];
+      const tagline = traits.length
+        ? `${firstName(name)} is ${traits.slice(0, 3).join(", ")}.`
+        : "A personal site generated from agent context.";
+
+      document.getElementById("previewName").textContent = name;
+      document.getElementById("previewTagline").textContent = tagline;
+      document.getElementById("previewHeadline").textContent = `${firstName(name)}'s corner of the internet.`;
+      document.getElementById("previewBio").textContent = data.summary || "The agent has not supplied a who-I-am summary yet.";
+      document.getElementById("traitInterests").textContent = listText(data.interests, "Unassigned");
+      document.getElementById("traitSkills").textContent = listText(data.skills, "Unassigned");
+      document.getElementById("traitTaste").textContent = listText(data.taste, "Unassigned");
+      renderTestimonials(data.testimonials);
+      roomStatus.textContent = `Built ${firstName(name)}'s site from agent context`;
+      setProgress(100);
+      addFeed(`Applied strict context for ${name}. Site preview regenerated.`, "build");
+    }
+
+    async function postContext(data, source) {
+      addFeed(`${source} payload POST started.`, "post");
+      setProgress(58);
+      const response = await fetch(ingestUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        const details = Array.isArray(result.errors) ? result.errors.join(" ") : result.error || "Unknown validation error.";
+        throw new Error(details);
+      }
+      addFeed("Backend accepted payload. Waiting for room event.", "202");
+      setProgress(82);
+      return result;
+    }
+
+    function connectRoom() {
+      try {
+        const source = new EventSource(eventsUrl);
+        source.addEventListener("open", () => {
+          roomStatus.textContent = "Live room connected";
+          addFeed("SSE room connected.", "sse");
+          setProgress(24);
+        });
+        source.addEventListener("ready", (event) => {
+          const data = JSON.parse(event.data);
+          addFeed(`Room ${data.payload.roomId} is listening.`, "ready");
+        });
+        source.addEventListener("status", (event) => {
+          const data = JSON.parse(event.data);
+          addFeed(data.payload.message, "status");
+          setProgress(70);
+        });
+        source.addEventListener("context", (event) => {
+          const data = JSON.parse(event.data);
+          applyContext(data.payload);
+        });
+        source.addEventListener("error", (event) => {
+          if (event.data) {
+            const data = JSON.parse(event.data);
+            addFeed(`${data.payload.message} ${data.payload.errors.join(" ")}`, "error");
+          } else {
+            roomStatus.textContent = "Trying to reconnect to live room";
+          }
+        });
+      } catch (error) {
+        addFeed(`Could not connect to room stream: ${error.message}`, "error");
+      }
+    }
+
+    document.getElementById("copyPrompt").addEventListener("click", async () => {
+      await navigator.clipboard.writeText(promptEl.value);
+      copyState.textContent = "copied";
+      addFeed("Prompt copied. Waiting for agent handoff.", "copy");
+      setTimeout(() => { copyState.textContent = "ready"; }, 1600);
+    });
+
+    document.getElementById("simulate").addEventListener("click", async () => {
+      try {
+        addFeed("Simulated agent is submitting approved context.", "socket");
+        await postContext({
+          name: "Avery Hart",
+          summary: "Avery is a fast-thinking product builder with a fondness for sharp tools, humane systems, and collaborators who make ideas visible quickly.",
+          interests: ["agentic tools", "personal software", "internet-native publishing"],
+          projects: ["A live personal website builder", "tiny tools with strong opinions"],
+          skills: ["product judgment", "rapid prototyping", "tasteful systems design"],
+          taste: ["terse copy", "editorial layouts", "interfaces that feel alive"],
+          traits: ["high-signal", "playfully decisive", "prototype-hungry"],
+          testimonials: [
+            { quote: "Avery asks for the impossible, then casually accepts a working demo twenty minutes later.", signed: "my AI" },
+            { quote: "Has never met a blank canvas they could not turn into a product-shaped dare.", signed: "my AI" },
+            { quote: "Would probably make a settings page feel like a secret clubhouse.", signed: "my AI" }
+          ]
+        }, "Simulated agent");
+      } catch (error) {
+        addFeed(`Simulated payload rejected: ${error.message}`, "error");
+        setProgress(24);
+      }
+    });
+
+    document.getElementById("applyPayload").addEventListener("click", async () => {
+      try {
+        const data = JSON.parse(document.getElementById("payloadInput").value);
+        await postContext(data, "Manual");
+      } catch (error) {
+        addFeed(`Payload rejected: ${error.message}`, "error");
+        setProgress(24);
+      }
+    });
+
+    renderTestimonials([]);
+    setProgress(14);
+    connectRoom();
+  </script>
+</body>
+</html>
