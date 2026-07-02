@@ -609,23 +609,6 @@
       gap: clamp(16px, 2vw, 24px);
     }
 
-    .generated nav {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      font-family: "Courier New", monospace;
-      font-size: 12px;
-      text-transform: uppercase;
-    }
-
-    .generated nav span {
-      padding: 7px 10px;
-      color: #17130f;
-      background: rgba(23, 19, 15, 0.08);
-      border: 1px solid rgba(23, 19, 15, 0.18);
-      border-radius: 999px;
-    }
-
     .generated h2 {
       max-width: 12ch;
       margin: 0;
@@ -1074,12 +1057,6 @@ Use this Session ID: ${sessionId}`;
           </aside>
 
           <section class="generated">
-            <nav aria-label="Generated website sections">
-              <span>About</span>
-              <span>Signals</span>
-              <span>Work</span>
-              <span>Contact</span>
-            </nav>
             <h2 id="previewHeadline">${escapeHtml(firstName(name))}'s corner of the internet.</h2>
             <p id="previewBio">${escapeHtml(data.summary || "The agent has not supplied a who-I-am summary yet.")}</p>
             <div class="trait-grid">
