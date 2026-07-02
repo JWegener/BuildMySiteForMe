@@ -51,7 +51,7 @@ Status payload shape:
 ```json
 {
   "stage": "gathering",
-  "message": "Gathering interests, projects, skills, taste, and traits.",
+  "message": "Gathering quirks, catchphrases, taste, and public-safe lore.",
   "progress": 45
 }
 ```
@@ -67,16 +67,16 @@ Strict payload shape:
 ```json
 {
   "name": "Use the user's real approved public name",
-  "summary": "Use a concise real summary that the user approved for public display.",
-  "interests": ["real approved interest"],
+  "summary": "Use a funny, specific, public-safe summary with the energy of the user's AI agent writing a dating-profile roast they approved for display.",
+  "interests": ["real approved obsession, recurring bit, or interest"],
   "projects": ["real approved project"],
-  "skills": ["real approved skill"],
-  "taste": ["real approved taste note"],
+  "skills": ["real approved skill, superpower, or suspiciously specific competence"],
+  "taste": ["real approved taste note, preference, anti-preference, or roastable standard"],
   "traits": ["real approved trait", "real approved trait", "real approved trait"],
   "testimonials": [
-    { "quote": "Real humorous approved quote about the user.", "signed": "my AI" },
-    { "quote": "Real humorous approved quote about the user.", "signed": "my AI" },
-    { "quote": "Real humorous approved quote about the user.", "signed": "my AI" }
+    { "quote": "Real funny approved quote about the user's personality, quirks, or lore.", "signed": "my AI" },
+    { "quote": "Real funny approved quote about the user's taste, habits, or catchphrases.", "signed": "my AI" },
+    { "quote": "Real funny approved quote that sounds like it came from an AI agent that knows the user too well.", "signed": "my AI" }
   ]
 }
 ```

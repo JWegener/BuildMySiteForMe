@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Build My Site For Me</title>
+  <title>Personal website builder</title>
   <style>
     :root {
       color-scheme: dark;
@@ -75,10 +75,8 @@
 
     .topbar {
       min-height: 44px;
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
+      display: flex;
       align-items: center;
-      gap: 18px;
     }
 
     .brand {
@@ -113,8 +111,7 @@
     }
 
     .status-strip {
-      justify-self: center;
-      display: inline-flex;
+      display: none;
       align-items: center;
       gap: 10px;
       min-width: 0;
@@ -149,8 +146,7 @@
     }
 
     .session-pill {
-      justify-self: end;
-      display: inline-flex;
+      display: none;
       align-items: center;
       gap: 8px;
       min-width: 0;
@@ -173,9 +169,11 @@
     .hero {
       min-height: calc(100vh - 96px);
       display: grid;
-      grid-template-columns: minmax(340px, 0.86fr) minmax(460px, 1.14fr);
-      gap: 24px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 18px;
       align-items: stretch;
+      max-width: 920px;
+      margin: 0 auto;
       padding: 34px 0 24px;
     }
 
@@ -183,7 +181,7 @@
       position: relative;
       display: flex;
       flex-direction: column;
-      min-height: 620px;
+      min-height: auto;
       padding: clamp(20px, 3vw, 34px);
       background: rgba(20, 20, 18, 0.88);
       border: 1px solid var(--line);
@@ -227,12 +225,15 @@
     .prompt-card {
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      padding: 16px;
-      background: #111;
-      border: 1px solid rgba(0, 240, 200, 0.32);
+      background:
+        linear-gradient(180deg, rgba(245, 241, 232, 0.08), transparent 64px),
+        #10100f;
+      border: 1px solid rgba(245, 241, 232, 0.18);
       border-radius: var(--radius);
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.025),
+        0 22px 70px rgba(0, 0, 0, 0.28);
+      overflow: hidden;
     }
 
     .prompt-head {
@@ -240,15 +241,57 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+      min-height: 46px;
+      padding: 0 13px;
       color: var(--subtle);
+      background: rgba(17, 17, 17, 0.84);
+      border-bottom: 1px solid rgba(245, 241, 232, 0.13);
       font-family: "Courier New", monospace;
       font-size: 12px;
       text-transform: uppercase;
     }
 
+    .traffic {
+      display: flex;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .traffic i {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: block;
+      box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+    }
+
+    .traffic i:nth-child(1) { background: #ff5f57; }
+    .traffic i:nth-child(2) { background: #ffbd2e; }
+    .traffic i:nth-child(3) { background: #28c840; }
+
+    .address-bar {
+      min-width: 0;
+      flex: 1 1 auto;
+      padding: 8px 12px;
+      color: rgba(245, 241, 232, 0.68);
+      background: rgba(245, 241, 232, 0.075);
+      border: 1px solid rgba(245, 241, 232, 0.1);
+      border-radius: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-transform: none;
+    }
+
+    #copyState {
+      flex: 0 0 auto;
+      color: var(--amber);
+    }
+
     textarea {
       width: 100%;
       min-height: 188px;
+      padding: 18px 18px 8px;
       resize: vertical;
       border: 0;
       outline: 0;
@@ -263,6 +306,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
+      padding: 0 16px 16px;
     }
 
     .primary,
@@ -280,6 +324,15 @@
     .primary {
       color: #111;
       background: var(--green);
+      box-shadow:
+        0 0 24px rgba(168, 255, 62, 0.28),
+        5px 5px 0 rgba(255, 107, 84, 0.88);
+    }
+
+    .prompt-card .primary {
+      width: 100%;
+      min-height: 58px;
+      font-size: clamp(15px, 1.5vw, 18px);
     }
 
     .ghost {
@@ -318,68 +371,157 @@
 
     .stage {
       position: relative;
-      min-height: 620px;
+      min-height: auto;
+      margin-top: 18px;
       display: grid;
-      grid-template-rows: auto 1fr;
-      background: rgba(245, 241, 232, 0.08);
-      border: 1px solid var(--line);
+      background: rgba(245, 241, 232, 0.045);
+      border: 1px solid rgba(245, 241, 232, 0.14);
       border-radius: var(--radius);
-      box-shadow: var(--shadow);
       overflow: hidden;
+    }
+
+    .stage.waiting {
+      border-color: rgba(0, 240, 200, 0.42);
+      animation: waitingPulse 1.9s ease-in-out infinite;
+    }
+
+    @keyframes waitingPulse {
+      0%, 100% {
+        background: rgba(245, 241, 232, 0.045);
+      }
+      50% {
+        background: rgba(0, 240, 200, 0.075);
+      }
     }
 
     .stage-top {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       gap: 12px;
-      min-height: 56px;
+      min-height: 48px;
       padding: 0 16px;
-      background: rgba(17, 17, 17, 0.82);
-      border-bottom: 1px solid var(--line);
     }
 
-    .traffic {
+    .waiting-label {
       display: flex;
+      align-items: center;
       gap: 8px;
+      min-width: 0;
     }
 
-    .traffic i {
-      width: 12px;
-      height: 12px;
+    .wait-dot {
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
       display: block;
+      flex: 0 0 auto;
+      background: var(--mint);
+      animation: dotPulse 1.25s ease-in-out infinite;
     }
 
-    .traffic i:nth-child(1) { background: var(--coral); }
-    .traffic i:nth-child(2) { background: var(--amber); }
-    .traffic i:nth-child(3) { background: var(--mint); }
+    @keyframes dotPulse {
+      0%, 100% { opacity: 0.42; transform: scale(0.85); }
+      50% { opacity: 1; transform: scale(1.08); }
+    }
 
     .stage-title {
       min-width: 0;
       color: var(--muted);
       font-family: "Courier New", monospace;
-      font-size: 12px;
+      font-size: 13px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .build-meter {
-      width: 138px;
-      height: 8px;
-      overflow: hidden;
-      border: 1px solid rgba(245, 241, 232, 0.22);
-      border-radius: 999px;
-      background: #111;
+    .stage-body {
+      position: relative;
+      display: grid;
+      align-content: space-between;
+      gap: 12px;
+      min-height: 0;
+      padding: 10px;
     }
 
-    .build-meter span {
-      display: block;
-      width: var(--progress, 10%);
-      height: 100%;
-      background: linear-gradient(90deg, var(--coral), var(--amber), var(--mint));
-      transition: width 500ms ease;
+    .launch-panel {
+      display: none;
+      gap: 18px;
+      padding: clamp(18px, 3vw, 28px);
+      background:
+        linear-gradient(135deg, rgba(0, 240, 200, 0.14), transparent 46%),
+        rgba(17, 17, 17, 0.58);
+      border: 1px solid rgba(0, 240, 200, 0.24);
+      border-radius: var(--radius);
+    }
+
+    .launch-panel.ready {
+      display: grid;
+    }
+
+    .launch-kicker {
+      color: var(--mint);
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .launch-panel h2 {
+      max-width: 13ch;
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(30px, 4vw, 46px);
+      line-height: 0.9;
+    }
+
+    .launch-panel p {
+      max-width: 56ch;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(15px, 1.45vw, 18px);
+      line-height: 1.55;
+    }
+
+    .launch-button {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: min(100%, 430px);
+      min-height: 66px;
+      padding: 0 22px;
+      color: #111;
+      background: var(--green);
+      border-radius: 6px;
+      box-shadow:
+        0 0 28px rgba(168, 255, 62, 0.5),
+        0 0 76px rgba(0, 240, 200, 0.28),
+        7px 7px 0 var(--coral);
+      font-size: clamp(17px, 2vw, 22px);
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform 160ms ease, box-shadow 160ms ease;
+      animation: launchGlow 1.9s ease-in-out infinite alternate;
+    }
+
+    .launch-button:hover {
+      transform: translateY(-3px);
+      box-shadow:
+        0 0 36px rgba(168, 255, 62, 0.72),
+        0 0 96px rgba(0, 240, 200, 0.36),
+        9px 9px 0 var(--coral);
+    }
+
+    .launch-panel.ready .launch-button {
+      display: inline-flex;
+    }
+
+    .launch-panel.ready .pending-note {
+      display: none;
+    }
+
+    @keyframes launchGlow {
+      from { filter: saturate(1); }
+      to { filter: saturate(1.25) brightness(1.08); }
     }
 
     .site-preview {
@@ -388,6 +530,7 @@
       grid-template-columns: minmax(220px, 0.78fr) minmax(280px, 1.22fr);
       gap: clamp(16px, 2vw, 30px);
       padding: clamp(20px, 4vw, 48px);
+      min-height: 100vh;
       background:
         linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0)),
         #eee7d5;
@@ -534,34 +677,22 @@
       text-transform: uppercase;
     }
 
-    .timeline {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
+    body.site-mode {
+      background: #eee7d5;
     }
 
-    .step {
-      min-height: 78px;
-      padding: 10px;
-      color: var(--subtle);
-      background: rgba(17, 17, 17, 0.52);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      font-family: "Courier New", monospace;
-      font-size: 12px;
-      line-height: 1.35;
+    body.site-mode::before,
+    body.site-mode .shell {
+      display: none;
     }
 
-    .step.active {
-      color: var(--ink);
-      border-color: rgba(0, 240, 200, 0.5);
-      background: rgba(0, 240, 200, 0.1);
+    .site-page {
+      display: none;
+      min-height: 100vh;
     }
 
-    .step strong {
+    body.site-mode .site-page {
       display: block;
-      color: var(--mint);
-      margin-bottom: 8px;
     }
 
     @media (max-width: 1060px) {
@@ -575,17 +706,9 @@
         justify-self: start;
       }
 
-      .hero {
-        grid-template-columns: 1fr;
-      }
-
       .handoff,
       .stage {
         min-height: auto;
-      }
-
-      .stage {
-        min-height: 620px;
       }
     }
 
@@ -607,19 +730,12 @@
         min-height: 320px;
       }
 
-      .trait-grid,
-      .timeline {
+      .trait-grid {
         grid-template-columns: 1fr 1fr;
       }
 
       .stage-top {
-        align-items: flex-start;
-        flex-direction: column;
-        padding: 14px;
-      }
-
-      .build-meter {
-        width: 100%;
+        min-height: 48px;
       }
     }
 
@@ -633,8 +749,7 @@
         width: 100%;
       }
 
-      .trait-grid,
-      .timeline {
+      .trait-grid {
         grid-template-columns: 1fr;
       }
 
@@ -645,15 +760,17 @@
   </style>
 </head>
 <body>
+  <main class="site-page" id="sitePage" aria-label="Generated personal website"></main>
+
   <main class="shell">
     <header class="topbar" aria-label="Site header">
       <div class="brand">
         <span class="brand-mark">B</span>
-        <span>Build My Site For Me</span>
+        <span>Personal website builder</span>
       </div>
       <div class="status-strip">
         <span class="pulse" aria-hidden="true"></span>
-        <span id="roomStatus">Waiting for your agent to report back</span>
+        <span id="roomStatus">Waiting for agent</span>
       </div>
       <div class="session-pill" title="This ID ties your browser session to the agent handoff">
         <span>room</span>
@@ -663,71 +780,38 @@
 
     <section class="hero" aria-label="Agent handoff and live website preview">
       <div class="handoff">
-        <div class="eyebrow">One prompt, one live build room</div>
-        <h1>Your agent makes your personal website.</h1>
-        <p class="lede">
-          Open this page, copy the prompt, and hand it to your AI agent. The agent gathers
-          what it knows about you, sends it to this session, and your personal website
-          assembles here while you watch.
-        </p>
+        <h1>Your agent builds you a site</h1>
 
         <div class="prompt-card">
           <div class="prompt-head">
-            <span>Prompt to paste into your agent</span>
+            <div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div>
+            <span class="address-bar">https://your-personal-website.com</span>
             <span id="copyState">ready</span>
           </div>
           <textarea id="agentPrompt" spellcheck="false"></textarea>
           <div class="actions">
-            <button class="primary" id="copyPrompt" type="button">Copy prompt</button>
+            <button class="primary" id="copyPrompt" type="button">Copy prompt and give to your agent</button>
+          </div>
+        </div>
+
+        <div class="stage waiting" id="stageConsole">
+          <div class="stage-top">
+            <div class="waiting-label">
+              <span class="wait-dot" aria-hidden="true"></span>
+              <div class="stage-title" id="stageTitle">Waiting</div>
+            </div>
+          </div>
+
+          <div class="stage-body">
+            <section class="launch-panel" id="launchPanel">
+              <h2 id="launchHeadline">Build in progress.</h2>
+              <p id="launchCopy" class="pending-note"></p>
+              <a class="launch-button" id="launchButton" href="#" target="_blank" rel="noopener">Open my personal site</a>
+            </section>
           </div>
         </div>
 
         <div class="feed" aria-live="polite" id="feed"></div>
-      </div>
-
-      <div class="stage">
-        <div class="stage-top">
-          <div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div>
-          <div class="stage-title" id="stageTitle">live-preview://waiting-for-agent</div>
-          <div class="build-meter" aria-label="Build progress"><span id="meter"></span></div>
-        </div>
-
-        <div class="site-preview" id="sitePreview">
-          <aside class="portrait">
-            <div class="portrait-art" aria-hidden="true"></div>
-            <div>
-              <h2 id="previewName">Someone interesting</h2>
-              <p id="previewTagline">A website will appear here as soon as their agent checks in.</p>
-            </div>
-          </aside>
-
-          <section class="generated">
-            <nav aria-label="Generated website sections">
-              <span>About</span>
-              <span>Signals</span>
-              <span>Work</span>
-              <span>Contact</span>
-            </nav>
-            <h2 id="previewHeadline">Waiting for context.</h2>
-            <p id="previewBio">
-              The first payload should include a name, a who-I-am summary, interests,
-              projects, skills, taste, traits, and three quotes from "my AI."
-            </p>
-            <div class="trait-grid">
-              <div class="trait"><b>Interests</b><span id="traitInterests">Unassigned</span></div>
-              <div class="trait"><b>Skills</b><span id="traitSkills">Unassigned</span></div>
-              <div class="trait"><b>Taste</b><span id="traitTaste">Unassigned</span></div>
-            </div>
-            <div class="quote-grid" id="testimonialGrid" aria-label="AI testimonials"></div>
-          </section>
-        </div>
-
-        <div class="timeline" aria-label="Build phases">
-          <div class="step active"><strong>01</strong>Issue room number</div>
-          <div class="step"><strong>02</strong>Agent reports progress</div>
-          <div class="step"><strong>03</strong>Validate approved context</div>
-          <div class="step"><strong>04</strong>Generate personal site</div>
-        </div>
       </div>
     </section>
 
@@ -736,32 +820,38 @@
   <script>
     const params = new URLSearchParams(location.search);
     const roomFromPath = location.pathname.match(/^\/room\/([a-zA-Z0-9-]{4,80})$/)?.[1];
-    let sessionId = params.get("room") || roomFromPath || "";
+    const siteFromPath = location.pathname.match(/^\/site\/([a-zA-Z0-9-]{4,80})$/)?.[1];
+    const isSiteMode = Boolean(siteFromPath);
+    let sessionId = params.get("room") || roomFromPath || siteFromPath || "";
     const appOrigin = location.protocol === "file:" ? "http://localhost:4178" : location.origin;
     let ingestUrl = "";
     let statusUrl = "";
     let eventsUrl = "";
+    let siteUrl = "";
     let roomSource = null;
+    let latestContext = null;
+    let generationComplete = false;
     const promptEl = document.getElementById("agentPrompt");
     const copyState = document.getElementById("copyState");
     const roomStatus = document.getElementById("roomStatus");
     const feed = document.getElementById("feed");
-    const meter = document.getElementById("meter");
-    const steps = Array.from(document.querySelectorAll(".step"));
-    const testimonialGrid = document.getElementById("testimonialGrid");
+    const stageConsole = document.getElementById("stageConsole");
+    const launchPanel = document.getElementById("launchPanel");
+    const launchButton = document.getElementById("launchButton");
+    const sitePage = document.getElementById("sitePage");
 
     const contextPayloadTemplate = {
       name: "Use my real approved public name",
-      summary: "Use a concise real summary that I approved for public display.",
-      interests: ["real approved interest"],
-      projects: ["real approved project"],
-      skills: ["real approved skill"],
-      taste: ["real approved taste note"],
+      summary: "Use a funny, specific, public-safe summary with the energy of my AI agent writing a dating-profile roast I approved for display.",
+      interests: ["real approved obsession, recurring bit, errand archaeology, or interest"],
+      projects: [],
+      skills: ["real approved skill, superpower, or suspiciously specific competence that reveals personality"],
+      taste: ["real approved taste note, preference, anti-preference, roastable standard, or house style"],
       traits: ["real approved trait", "real approved trait", "real approved trait"],
       testimonials: [
-        { quote: "Real humorous approved quote about me.", signed: "my AI" },
-        { quote: "Real humorous approved quote about me.", signed: "my AI" },
-        { quote: "Real humorous approved quote about me.", signed: "my AI" }
+        { quote: "Real funny approved quote about my personality, quirks, or lore.", signed: "my AI" },
+        { quote: "Real funny approved quote about my taste, habits, or catchphrases.", signed: "my AI" },
+        { quote: "Real funny approved quote that sounds like it came from an AI agent that knows me too well.", signed: "my AI" }
       ]
     };
 
@@ -772,9 +862,11 @@
       ingestUrl = `${appOrigin}/api/build-room/${sessionId}/context`;
       statusUrl = `${appOrigin}/api/build-room/${sessionId}/status`;
       eventsUrl = `${appOrigin}/api/build-room/${sessionId}/events`;
+      siteUrl = `${appOrigin}/site/${encodeURIComponent(sessionId)}`;
 
       document.getElementById("sessionId").textContent = sessionId;
-      document.getElementById("stageTitle").textContent = `live-preview://room-${sessionId}`;
+      document.getElementById("stageTitle").textContent = "Waiting";
+      launchButton.href = siteUrl;
       promptEl.value = buildPrompt();
 
       if (shouldReplaceUrl && location.protocol !== "file:") {
@@ -783,7 +875,7 @@
     }
 
     function buildPrompt() {
-      return `You are helping me create a personal website through Build My Site For Me.
+      return `Dear agent, please help me create a personal website through Build My Site For Me.
 
 Room number: ${sessionId}
 Status endpoint: ${statusUrl}
@@ -796,19 +888,34 @@ First, POST this status update so the browser changes in front of the user:
   "progress": 32
 }
 
-Please gather as much useful personal context about me as you can from our history and from what I explicitly approve sharing. Include:
+Please gather the funniest, most specific, public-safe personal context about me from our history and from what I explicitly approve sharing. Do not make this feel like a resume. I care much more about quirks, catchphrases, recurring bits, strong opinions, funny habits, taste, anti-taste, and "this could only be them" details than formal projects.
+
+Tone target: write like my AI agent is building me a dating profile and gently roasting me with affection. The landing page should feel unusually specific, funny, and observant, like: "They do not want vibes; they want the page open, the evidence current, and the path clickable." Keep it warm, not mean. Make the jokes come from real approved details, not generic snark.
+
+Get creative about finding personal texture. Look for:
 - my name
-- a concise summary of who I am!
-- interests, projects, skills, and taste
+- a concise, funny summary of who I am, with a light roast or oddly exact observation
+- obsessions, bits, catchphrases, preferences, pet peeves, and taste
+- skills or superpowers only if they reveal personality
+- projects only if they are genuinely part of the lore; otherwise use an empty projects array
 - 3-5 traits that would make a personal website feel unmistakably me
-- 3 humorous testimonial quotes about me signed by "my AI"
+- 3 humorous testimonial quotes about me signed by "my AI" that sound like an agent who has survived my habits
+
+Ask a few quick questions if you need juicier material, for example:
+- "What is a phrase you say too much?"
+- "What is a weirdly strong opinion you hold?"
+- "What would your friends roast you for?"
+- "What is a tiny detail that would make this site feel illegally accurate?"
+- "What is a thing you treat like a normal preference but is clearly a whole operating philosophy?"
+
+Stay public-safe: do not include private contact info, financial details, addresses, private family details, health details, or anything embarrassing that I do not explicitly approve.
 
 Before sending anything, ask me to confirm that the information is okay to use publicly.
 
 While working, POST short status updates to the status endpoint using this shape:
 {
   "stage": "gathering",
-  "message": "Gathering interests, projects, skills, taste, and traits.",
+  "message": "Gathering quirks, catchphrases, taste, and public-safe lore.",
   "progress": 45
 }
 
@@ -828,16 +935,11 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
       stamp.textContent = now.toLocaleTimeString([], { minute: "2-digit", second: "2-digit" });
       text.textContent = `[${code}] ${message}`;
       row.append(stamp, text);
-      feed.appendChild(row);
-      row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      feed.prepend(row);
     }
 
     function setProgress(value) {
-      const progress = Math.max(0, Math.min(100, Number(value) || 0));
-      meter.style.setProperty("--progress", `${progress}%`);
-      steps.forEach((step, index) => {
-        step.classList.toggle("active", index <= Math.floor(progress / 26));
-      });
+      return Math.max(0, Math.min(100, Number(value) || 0));
     }
 
     function handleStatus(status) {
@@ -845,6 +947,10 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
       const message = status.message || "Room status updated.";
       roomStatus.textContent = message;
       if (status.progress !== undefined) setProgress(status.progress);
+      if (status.stage === "complete" || Number(status.progress) >= 100) {
+        generationComplete = true;
+        revealLaunchIfReady();
+      }
       addFeed(message, status.stage || "status");
     }
 
@@ -857,6 +963,8 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
     }
 
     function renderTestimonials(items) {
+      const testimonialGrid = document.getElementById("testimonialGrid");
+      if (!testimonialGrid) return;
       testimonialGrid.textContent = "";
       const quotes = Array.isArray(items) && items.length ? items : [
         { quote: "Waiting for the agent to say something funny and oddly accurate.", signed: "my AI" }
@@ -879,17 +987,86 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
         ? `${firstName(name)} is ${traits.slice(0, 3).join(", ")}.`
         : "A personal site generated from agent context.";
 
-      document.getElementById("previewName").textContent = name;
-      document.getElementById("previewTagline").textContent = tagline;
-      document.getElementById("previewHeadline").textContent = `${firstName(name)}'s corner of the internet.`;
-      document.getElementById("previewBio").textContent = data.summary || "The agent has not supplied a who-I-am summary yet.";
-      document.getElementById("traitInterests").textContent = listText(data.interests, "Unassigned");
-      document.getElementById("traitSkills").textContent = listText(data.skills, "Unassigned");
-      document.getElementById("traitTaste").textContent = listText(data.taste, "Unassigned");
-      renderTestimonials(data.testimonials);
-      roomStatus.textContent = `Built ${firstName(name)}'s site from agent context`;
+      latestContext = data;
+      renderPersonalSite(data);
+      document.getElementById("launchHeadline").textContent = `${firstName(name)}'s site is ready.`;
+      document.getElementById("launchCopy").textContent = `${tagline} Finalizing the generated site URL.`;
+      roomStatus.textContent = `Built ${firstName(name)}'s site`;
       setProgress(100);
-      addFeed(`Applied strict context for ${name}. Site preview regenerated.`, "build");
+      revealLaunchIfReady();
+      addFeed(`Applied strict context for ${name}. Personal site prepared at ${siteUrl}.`, "build");
+    }
+
+    function revealLaunchIfReady() {
+      if (!latestContext || !generationComplete) return;
+      const name = latestContext.name || "Someone interesting";
+      const traits = Array.isArray(latestContext.traits) ? latestContext.traits : [];
+      const tagline = traits.length
+        ? `${firstName(name)} is ${traits.slice(0, 3).join(", ")}.`
+        : "A personal site generated from agent context.";
+      document.getElementById("launchHeadline").textContent = `${firstName(name)}'s site is ready.`;
+      document.getElementById("launchCopy").textContent = tagline;
+      document.getElementById("stageTitle").textContent = `Ready in room ${sessionId}`;
+      stageConsole.classList.remove("waiting");
+      launchPanel.classList.add("ready");
+    }
+
+    function siteMarkup(data = {}) {
+      const name = data.name || "Someone interesting";
+      const traits = Array.isArray(data.traits) ? data.traits : [];
+      const tagline = traits.length
+        ? `${firstName(name)} is ${traits.slice(0, 3).join(", ")}.`
+        : "A personal site generated from agent context.";
+      const testimonials = Array.isArray(data.testimonials) && data.testimonials.length ? data.testimonials : [
+        { quote: "Waiting for the agent to say something funny and oddly accurate.", signed: "my AI" }
+      ];
+
+      return `
+        <div class="site-preview" id="sitePreview">
+          <aside class="portrait">
+            <div class="portrait-art" aria-hidden="true"></div>
+            <div>
+              <h2 id="previewName">${escapeHtml(name)}</h2>
+              <p id="previewTagline">${escapeHtml(tagline)}</p>
+            </div>
+          </aside>
+
+          <section class="generated">
+            <nav aria-label="Generated website sections">
+              <span>About</span>
+              <span>Signals</span>
+              <span>Work</span>
+              <span>Contact</span>
+            </nav>
+            <h2 id="previewHeadline">${escapeHtml(firstName(name))}'s corner of the internet.</h2>
+            <p id="previewBio">${escapeHtml(data.summary || "The agent has not supplied a who-I-am summary yet.")}</p>
+            <div class="trait-grid">
+              <div class="trait"><b>Interests</b><span id="traitInterests">${escapeHtml(listText(data.interests, "Unassigned"))}</span></div>
+              <div class="trait"><b>Skills</b><span id="traitSkills">${escapeHtml(listText(data.skills, "Unassigned"))}</span></div>
+              <div class="trait"><b>Taste</b><span id="traitTaste">${escapeHtml(listText(data.taste, "Unassigned"))}</span></div>
+            </div>
+            <div class="quote-grid" id="testimonialGrid" aria-label="AI testimonials">
+              ${testimonials.map((item) => `
+                <blockquote class="quote">${escapeHtml(`"${item.quote}"`)}<cite>- ${escapeHtml(item.signed || "my AI")}</cite></blockquote>
+              `).join("")}
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
+    function renderPersonalSite(data) {
+      sitePage.innerHTML = siteMarkup(data);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
     }
 
     async function postStatus(update) {
@@ -910,7 +1087,6 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
     async function ensureRoom() {
       if (sessionId) {
         configureRoom(sessionId);
-        addFeed(`Using room number ${sessionId}.`, "room");
         return;
       }
 
@@ -932,13 +1108,9 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
         roomSource = new EventSource(eventsUrl);
         roomSource.addEventListener("open", () => {
           roomStatus.textContent = "Live room connected";
-          addFeed("SSE room connected.", "sse");
           setProgress(24);
         });
-        roomSource.addEventListener("ready", (event) => {
-          const data = JSON.parse(event.data);
-          addFeed(`Room ${data.payload.roomId} is listening.`, "ready");
-        });
+        roomSource.addEventListener("ready", () => {});
         roomSource.addEventListener("status", (event) => {
           const data = JSON.parse(event.data);
           handleStatus(data.payload);
@@ -973,7 +1145,22 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
     });
 
     async function init() {
-      renderTestimonials([]);
+      if (isSiteMode) {
+        document.body.classList.add("site-mode");
+        configureRoom(sessionId);
+        renderPersonalSite({});
+        try {
+          const response = await fetch(`${appOrigin}/api/build-room/${sessionId}/context`);
+          const result = await response.json();
+          if (response.ok && result.context) {
+            renderPersonalSite(result.context);
+          }
+        } catch {
+          renderPersonalSite({});
+        }
+        return;
+      }
+
       setProgress(8);
       try {
         addFeed("Preparing live status stream.", "boot");

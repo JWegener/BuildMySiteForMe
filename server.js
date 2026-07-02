@@ -17,16 +17,16 @@ const mimeTypes = {
 
 const schemaExample = {
   name: "Use the user's real approved public name",
-  summary: "Use a concise real summary that the user approved for public display.",
-  interests: ["real approved interest"],
+  summary: "Use a funny, specific, public-safe summary with the energy of the user's AI agent writing a dating-profile roast they approved for display.",
+  interests: ["real approved obsession, recurring bit, or interest"],
   projects: ["real approved project"],
-  skills: ["real approved skill"],
-  taste: ["real approved taste note"],
+  skills: ["real approved skill, superpower, or suspiciously specific competence"],
+  taste: ["real approved taste note, preference, anti-preference, or roastable standard"],
   traits: ["real approved trait", "real approved trait", "real approved trait"],
   testimonials: [
-    { quote: "Real humorous approved quote about the user.", signed: "my AI" },
-    { quote: "Real humorous approved quote about the user.", signed: "my AI" },
-    { quote: "Real humorous approved quote about the user.", signed: "my AI" }
+    { quote: "Real funny approved quote about the user's personality, quirks, or lore.", signed: "my AI" },
+    { quote: "Real funny approved quote about the user's taste, habits, or catchphrases.", signed: "my AI" },
+    { quote: "Real funny approved quote that sounds like it came from an AI agent that knows the user too well.", signed: "my AI" }
   ]
 };
 
@@ -38,7 +38,7 @@ function createRoom(id = makeRoomId()) {
       context: null,
       status: {
         stage: "issued",
-        message: "Room number issued. Waiting for the agent prompt to be copied.",
+        message: "Waiting for agent.",
         progress: 12
       },
       clients: new Set(),
@@ -331,11 +331,11 @@ const server = createServer(async (req, res) => {
       "x-accel-buffering": "no"
     });
     res.write(`event: ready\ndata: ${JSON.stringify({ type: "ready", payload: { roomId: room.id, createdAt: room.createdAt, status: room.status } })}\n\n`);
-    if (room.status) {
-      res.write(`event: status\ndata: ${JSON.stringify({ type: "status", payload: room.status })}\n\n`);
-    }
     if (room.context) {
       res.write(`event: context\ndata: ${JSON.stringify({ type: "context", payload: room.context })}\n\n`);
+    }
+    if (room.status) {
+      res.write(`event: status\ndata: ${JSON.stringify({ type: "status", payload: room.status })}\n\n`);
     }
     room.clients.add(res);
     req.on("close", () => room.clients.delete(res));
@@ -393,7 +393,7 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && /^\/room\/[a-zA-Z0-9-]{4,80}$/.test(url.pathname)) {
+  if (req.method === "GET" && /^\/(?:room|site)\/[a-zA-Z0-9-]{4,80}$/.test(url.pathname)) {
     await serveStatic(res, "/");
     return;
   }
