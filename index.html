@@ -770,10 +770,10 @@
       </div>
       <div class="status-strip">
         <span class="pulse" aria-hidden="true"></span>
-        <span id="roomStatus">Waiting for agent</span>
+        <span id="sessionStatus">Waiting for agent</span>
       </div>
       <div class="session-pill" title="This ID ties your browser session to the agent handoff">
-        <span>room</span>
+        <span>session</span>
         <span id="sessionId">loading</span>
       </div>
     </header>
@@ -819,21 +819,21 @@
 
   <script>
     const params = new URLSearchParams(location.search);
-    const roomFromPath = location.pathname.match(/^\/room\/([a-zA-Z0-9-]{4,80})$/)?.[1];
+    const sessionFromPath = location.pathname.match(/^\/(?:session|room)\/([a-zA-Z0-9-]{4,80})$/)?.[1];
     const siteFromPath = location.pathname.match(/^\/site\/([a-zA-Z0-9-]{4,80})$/)?.[1];
     const isSiteMode = Boolean(siteFromPath);
-    let sessionId = params.get("room") || roomFromPath || siteFromPath || "";
+    let sessionId = params.get("session") || params.get("room") || sessionFromPath || siteFromPath || "";
     const appOrigin = location.protocol === "file:" ? "http://localhost:4178" : location.origin;
     let ingestUrl = "";
     let statusUrl = "";
     let eventsUrl = "";
     let siteUrl = "";
-    let roomSource = null;
+    let sessionSource = null;
     let latestContext = null;
     let generationComplete = false;
     const promptEl = document.getElementById("agentPrompt");
     const copyState = document.getElementById("copyState");
-    const roomStatus = document.getElementById("roomStatus");
+    const sessionStatus = document.getElementById("sessionStatus");
     const feed = document.getElementById("feed");
     const stageConsole = document.getElementById("stageConsole");
     const launchPanel = document.getElementById("launchPanel");
@@ -842,26 +842,26 @@
 
     const contextPayloadTemplate = {
       name: "Use my real approved public name",
-      summary: "Use a funny, specific, public-safe summary with the energy of my AI agent writing a dating-profile roast I approved for display.",
-      interests: ["real approved obsession, recurring bit, errand archaeology, or interest"],
+      summary: "Use a warm, specific, public-safe summary of who I am, what I build, and what I care about.",
+      interests: ["real approved interest, recurring theme, or public-safe obsession"],
       projects: [],
-      skills: ["real approved skill, superpower, or suspiciously specific competence that reveals personality"],
-      taste: ["real approved taste note, preference, anti-preference, roastable standard, or house style"],
+      skills: ["real approved skill, superpower, or unusually specific competence that reveals personality"],
+      taste: ["real approved taste note, preference, anti-preference, or house style"],
       traits: ["real approved trait", "real approved trait", "real approved trait"],
       testimonials: [
-        { quote: "Real funny approved quote about my personality, quirks, or lore.", signed: "my AI" },
-        { quote: "Real funny approved quote about my taste, habits, or catchphrases.", signed: "my AI" },
-        { quote: "Real funny approved quote that sounds like it came from an AI agent that knows me too well.", signed: "my AI" }
+        { quote: "Warm, specific quote about my personality, values, or work.", signed: "my AI" },
+        { quote: "Warm quote about my taste, habits, or recurring themes.", signed: "my AI" },
+        { quote: "Public-safe quote that sounds like it came from an AI agent that knows me well.", signed: "my AI" }
       ]
     };
 
-    promptEl.value = "Creating your unique room number...";
+    promptEl.value = "Creating your unique Session ID...";
 
-    function configureRoom(id, shouldReplaceUrl = false) {
+    function configureSession(id, shouldReplaceUrl = false) {
       sessionId = id;
-      ingestUrl = `${appOrigin}/api/build-room/${sessionId}/context`;
-      statusUrl = `${appOrigin}/api/build-room/${sessionId}/status`;
-      eventsUrl = `${appOrigin}/api/build-room/${sessionId}/events`;
+      ingestUrl = `${appOrigin}/api/build-session/${sessionId}/context`;
+      statusUrl = `${appOrigin}/api/build-session/${sessionId}/status`;
+      eventsUrl = `${appOrigin}/api/build-session/${sessionId}/events`;
       siteUrl = `${appOrigin}/site/${encodeURIComponent(sessionId)}`;
 
       document.getElementById("sessionId").textContent = sessionId;
@@ -870,60 +870,14 @@
       promptEl.value = buildPrompt();
 
       if (shouldReplaceUrl && location.protocol !== "file:") {
-        history.replaceState(null, "", `/room/${encodeURIComponent(sessionId)}`);
+        history.replaceState(null, "", `/session/${encodeURIComponent(sessionId)}`);
       }
     }
 
     function buildPrompt() {
-      return `Dear agent, please help me create a personal website through Build My Site For Me.
+      return `Read ${appOrigin}/skill.md and follow the instructions to build my personal website.
 
-Room number: ${sessionId}
-Status endpoint: ${statusUrl}
-Ingest endpoint: ${ingestUrl}
-
-First, POST this status update so the browser changes in front of the user:
-{
-  "stage": "agent-started",
-  "message": "Agent connected. Gathering personal context.",
-  "progress": 32
-}
-
-Please gather the funniest, most specific, public-safe personal context about me from our history and from what I explicitly approve sharing. Do not make this feel like a resume. I care much more about quirks, catchphrases, recurring bits, strong opinions, funny habits, taste, anti-taste, and "this could only be them" details than formal projects.
-
-Tone target: write like my AI agent is building me a dating profile and gently roasting me with affection. The landing page should feel unusually specific, funny, and observant, like: "They do not want vibes; they want the page open, the evidence current, and the path clickable." Keep it warm, not mean. Make the jokes come from real approved details, not generic snark.
-
-Get creative about finding personal texture. Look for:
-- my name
-- a concise, funny summary of who I am, with a light roast or oddly exact observation
-- obsessions, bits, catchphrases, preferences, pet peeves, and taste
-- skills or superpowers only if they reveal personality
-- projects only if they are genuinely part of the lore; otherwise use an empty projects array
-- 3-5 traits that would make a personal website feel unmistakably me
-- 3 humorous testimonial quotes about me signed by "my AI" that sound like an agent who has survived my habits
-
-Ask a few quick questions if you need juicier material, for example:
-- "What is a phrase you say too much?"
-- "What is a weirdly strong opinion you hold?"
-- "What would your friends roast you for?"
-- "What is a tiny detail that would make this site feel illegally accurate?"
-- "What is a thing you treat like a normal preference but is clearly a whole operating philosophy?"
-
-Stay public-safe: do not include private contact info, financial details, addresses, private family details, health details, or anything embarrassing that I do not explicitly approve.
-
-Before sending anything, ask me to confirm that the information is okay to use publicly.
-
-While working, POST short status updates to the status endpoint using this shape:
-{
-  "stage": "gathering",
-  "message": "Gathering quirks, catchphrases, taste, and public-safe lore.",
-  "progress": 45
-}
-
-Use stage values like "gathering", "approval-needed", "approved", and "generating".
-
-After I approve the public information, POST exactly this strict JSON shape to the ingest endpoint. Do not add unknown fields. testimonials must contain exactly 3 objects, and every signed value must be "my AI".
-
-${JSON.stringify(contextPayloadTemplate, null, 2)}`;
+Use this Session ID: ${sessionId}`;
     }
 
     function addFeed(message, code = "recv") {
@@ -944,8 +898,8 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
 
     function handleStatus(status) {
       if (!status || typeof status !== "object") return;
-      const message = status.message || "Room status updated.";
-      roomStatus.textContent = message;
+      const message = status.message || "Session status updated.";
+      sessionStatus.textContent = message;
       if (status.progress !== undefined) setProgress(status.progress);
       if (status.stage === "complete" || Number(status.progress) >= 100) {
         generationComplete = true;
@@ -967,7 +921,7 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
       if (!testimonialGrid) return;
       testimonialGrid.textContent = "";
       const quotes = Array.isArray(items) && items.length ? items : [
-        { quote: "Waiting for the agent to say something funny and oddly accurate.", signed: "my AI" }
+        { quote: "Waiting for the agent to say something warm and oddly accurate.", signed: "my AI" }
       ];
       for (const item of quotes) {
         const block = document.createElement("blockquote");
@@ -991,7 +945,7 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
       renderPersonalSite(data);
       document.getElementById("launchHeadline").textContent = `${firstName(name)}'s site is ready.`;
       document.getElementById("launchCopy").textContent = `${tagline} Finalizing the generated site URL.`;
-      roomStatus.textContent = `Built ${firstName(name)}'s site`;
+      sessionStatus.textContent = `Built ${firstName(name)}'s site`;
       setProgress(100);
       revealLaunchIfReady();
       addFeed(`Applied strict context for ${name}. Personal site prepared at ${siteUrl}.`, "build");
@@ -1006,7 +960,7 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
         : "A personal site generated from agent context.";
       document.getElementById("launchHeadline").textContent = `${firstName(name)}'s site is ready.`;
       document.getElementById("launchCopy").textContent = tagline;
-      document.getElementById("stageTitle").textContent = `Ready in room ${sessionId}`;
+      document.getElementById("stageTitle").textContent = `Ready in session ${sessionId}`;
       stageConsole.classList.remove("waiting");
       launchPanel.classList.add("ready");
     }
@@ -1018,7 +972,7 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
         ? `${firstName(name)} is ${traits.slice(0, 3).join(", ")}.`
         : "A personal site generated from agent context.";
       const testimonials = Array.isArray(data.testimonials) && data.testimonials.length ? data.testimonials : [
-        { quote: "Waiting for the agent to say something funny and oddly accurate.", signed: "my AI" }
+        { quote: "Waiting for the agent to say something warm and oddly accurate.", signed: "my AI" }
       ];
 
       return `
@@ -1084,51 +1038,51 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
       return result;
     }
 
-    async function ensureRoom() {
+    async function ensureSession() {
       if (sessionId) {
-        configureRoom(sessionId);
+        configureSession(sessionId);
         return;
       }
 
-      roomStatus.textContent = "Requesting unique room number";
-      addFeed("Requesting server-issued room number.", "room");
-      const response = await fetch(`${appOrigin}/api/build-room`, { method: "POST" });
+      sessionStatus.textContent = "Requesting unique Session ID";
+      addFeed("Requesting server-issued Session ID.", "session");
+      const response = await fetch(`${appOrigin}/api/build-session`, { method: "POST" });
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.error || "Could not create a room.");
+        throw new Error(result.error || "Could not create a session.");
       }
-      configureRoom(result.roomId, true);
-      addFeed(`Room number ${result.roomId} issued.`, "room");
+      configureSession(result.sessionId, true);
+      addFeed(`Session ID ${result.sessionId} issued.`, "session");
       setProgress(12);
     }
 
-    function connectRoom() {
+    function connectSession() {
       try {
-        if (roomSource) roomSource.close();
-        roomSource = new EventSource(eventsUrl);
-        roomSource.addEventListener("open", () => {
-          roomStatus.textContent = "Live room connected";
+        if (sessionSource) sessionSource.close();
+        sessionSource = new EventSource(eventsUrl);
+        sessionSource.addEventListener("open", () => {
+          sessionStatus.textContent = "Live session connected";
           setProgress(24);
         });
-        roomSource.addEventListener("ready", () => {});
-        roomSource.addEventListener("status", (event) => {
+        sessionSource.addEventListener("ready", () => {});
+        sessionSource.addEventListener("status", (event) => {
           const data = JSON.parse(event.data);
           handleStatus(data.payload);
         });
-        roomSource.addEventListener("context", (event) => {
+        sessionSource.addEventListener("context", (event) => {
           const data = JSON.parse(event.data);
           applyContext(data.payload);
         });
-        roomSource.addEventListener("error", (event) => {
+        sessionSource.addEventListener("error", (event) => {
           if (event.data) {
             const data = JSON.parse(event.data);
             addFeed(`${data.payload.message} ${data.payload.errors.join(" ")}`, "error");
           } else {
-            roomStatus.textContent = "Trying to reconnect to live room";
+            sessionStatus.textContent = "Trying to reconnect to live session";
           }
         });
       } catch (error) {
-        addFeed(`Could not connect to room stream: ${error.message}`, "error");
+        addFeed(`Could not connect to session stream: ${error.message}`, "error");
       }
     }
 
@@ -1147,10 +1101,10 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
     async function init() {
       if (isSiteMode) {
         document.body.classList.add("site-mode");
-        configureRoom(sessionId);
+        configureSession(sessionId);
         renderPersonalSite({});
         try {
-          const response = await fetch(`${appOrigin}/api/build-room/${sessionId}/context`);
+          const response = await fetch(`${appOrigin}/api/build-session/${sessionId}/context`);
           const result = await response.json();
           if (response.ok && result.context) {
             renderPersonalSite(result.context);
@@ -1164,12 +1118,12 @@ ${JSON.stringify(contextPayloadTemplate, null, 2)}`;
       setProgress(8);
       try {
         addFeed("Preparing live status stream.", "boot");
-        await ensureRoom();
-        connectRoom();
+        await ensureSession();
+        connectSession();
       } catch (error) {
-        roomStatus.textContent = "Room setup failed";
-        promptEl.value = `Room setup failed: ${error.message}`;
-        addFeed(`Room setup failed: ${error.message}`, "error");
+        sessionStatus.textContent = "Session setup failed";
+        promptEl.value = `Session setup failed: ${error.message}`;
+        addFeed(`Session setup failed: ${error.message}`, "error");
       }
     }
 

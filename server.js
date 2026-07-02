@@ -6,33 +6,34 @@ import { randomInt, randomUUID } from "node:crypto";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const port = Number(process.env.PORT || 4178);
-const rooms = new Map();
+const sessions = new Map();
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
-  ".json": "application/json; charset=utf-8"
+  ".json": "application/json; charset=utf-8",
+  ".md": "text/markdown; charset=utf-8"
 };
 
 const schemaExample = {
   name: "Use the user's real approved public name",
-  summary: "Use a funny, specific, public-safe summary with the energy of the user's AI agent writing a dating-profile roast they approved for display.",
-  interests: ["real approved obsession, recurring bit, or interest"],
+  summary: "Use a warm, specific, public-safe summary of who the user is, what they build, and what they care about.",
+  interests: ["real approved interest, recurring theme, or public-safe obsession"],
   projects: ["real approved project"],
-  skills: ["real approved skill, superpower, or suspiciously specific competence"],
-  taste: ["real approved taste note, preference, anti-preference, or roastable standard"],
+  skills: ["real approved skill, superpower, or unusually specific competence"],
+  taste: ["real approved taste note, preference, anti-preference, or house style"],
   traits: ["real approved trait", "real approved trait", "real approved trait"],
   testimonials: [
-    { quote: "Real funny approved quote about the user's personality, quirks, or lore.", signed: "my AI" },
-    { quote: "Real funny approved quote about the user's taste, habits, or catchphrases.", signed: "my AI" },
-    { quote: "Real funny approved quote that sounds like it came from an AI agent that knows the user too well.", signed: "my AI" }
+    { quote: "Warm, specific quote about the user's personality, values, or work.", signed: "my AI" },
+    { quote: "Warm quote about the user's taste, habits, or recurring themes.", signed: "my AI" },
+    { quote: "Public-safe quote that sounds like it came from an AI agent that knows the user well.", signed: "my AI" }
   ]
 };
 
-function createRoom(id = makeRoomId()) {
-  if (!rooms.has(id)) {
-    rooms.set(id, {
+function createSession(id = makeSessionId()) {
+  if (!sessions.has(id)) {
+    sessions.set(id, {
       id,
       createdAt: new Date().toISOString(),
       context: null,
@@ -45,22 +46,22 @@ function createRoom(id = makeRoomId()) {
       events: []
     });
   }
-  return rooms.get(id);
+  return sessions.get(id);
 }
 
-function createNewRoom() {
-  let id = makeRoomId();
-  while (rooms.has(id)) id = makeRoomId();
-  return createRoom(id);
+function createNewSession() {
+  let id = makeSessionId();
+  while (sessions.has(id)) id = makeSessionId();
+  return createSession(id);
 }
 
-function makeRoomId() {
+function makeSessionId() {
   return String(randomInt(100000, 1000000));
 }
 
-function roomIdFromPath(pathname, suffix = "") {
+function sessionIdFromApiPath(pathname, suffix = "") {
   const escapedSuffix = suffix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = pathname.match(new RegExp(`^/api/build-room/([a-zA-Z0-9-]{4,80})${escapedSuffix}$`));
+  const match = pathname.match(new RegExp(`^/api/build-(?:session|room)/([a-zA-Z0-9-]{4,80})${escapedSuffix}$`));
   return match?.[1] || null;
 }
 
@@ -74,30 +75,30 @@ function sendJson(res, status, payload) {
   res.end(JSON.stringify(payload, null, 2));
 }
 
-function sendEvent(room, type, payload) {
+function sendEvent(session, type, payload) {
   const event = {
     id: randomUUID(),
     type,
     payload,
     createdAt: new Date().toISOString()
   };
-  room.events.push(event);
-  room.events = room.events.slice(-50);
+  session.events.push(event);
+  session.events = session.events.slice(-50);
   const wire = `event: ${type}\ndata: ${JSON.stringify(event)}\n\n`;
-  for (const client of room.clients) {
+  for (const client of session.clients) {
     client.write(wire);
   }
 }
 
-function updateRoomStatus(room, input) {
+function updateSessionStatus(session, input) {
   const status = {
-    stage: input.stage || room.status.stage || "working",
+    stage: input.stage || session.status.stage || "working",
     message: input.message,
-    progress: Number.isFinite(input.progress) ? Math.max(0, Math.min(100, input.progress)) : room.status.progress,
+    progress: Number.isFinite(input.progress) ? Math.max(0, Math.min(100, input.progress)) : session.status.progress,
     detail: input.detail || null
   };
-  room.status = status;
-  sendEvent(room, "status", status);
+  session.status = status;
+  sendEvent(session, "status", status);
   return status;
 }
 
@@ -106,9 +107,13 @@ function validateStatus(input) {
     "issued",
     "copied",
     "agent-started",
+    "analyzing",
     "gathering",
+    "drafting",
+    "reviewing",
     "approval-needed",
     "approved",
+    "publishing",
     "validating",
     "generating",
     "complete",
@@ -302,27 +307,28 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "POST" && url.pathname === "/api/build-room") {
-    const room = createNewRoom();
+  if (req.method === "POST" && (url.pathname === "/api/build-session" || url.pathname === "/api/build-room")) {
+    const session = createNewSession();
     sendJson(res, 201, {
       ok: true,
-      roomId: room.id,
-      roomUrl: `/room/${room.id}`,
-      eventsUrl: `/api/build-room/${room.id}/events`,
-      statusUrl: `/api/build-room/${room.id}/status`,
-      contextUrl: `/api/build-room/${room.id}/context`
+      sessionId: session.id,
+      sessionUrl: `/session/${session.id}`,
+      siteUrl: `/site/${session.id}`,
+      eventsUrl: `/api/build-session/${session.id}/events`,
+      statusUrl: `/api/build-session/${session.id}/status`,
+      contextUrl: `/api/build-session/${session.id}/context`
     });
     return;
   }
 
   if (req.method === "GET" && url.pathname === "/healthz") {
-    sendJson(res, 200, { ok: true, rooms: rooms.size });
+    sendJson(res, 200, { ok: true, sessions: sessions.size });
     return;
   }
 
-  const eventsRoomId = roomIdFromPath(url.pathname, "/events");
-  if (req.method === "GET" && eventsRoomId) {
-    const room = createRoom(eventsRoomId);
+  const eventsSessionId = sessionIdFromApiPath(url.pathname, "/events");
+  if (req.method === "GET" && eventsSessionId) {
+    const session = createSession(eventsSessionId);
     res.writeHead(200, {
       "content-type": "text/event-stream; charset=utf-8",
       "cache-control": "no-cache, no-transform",
@@ -330,28 +336,28 @@ const server = createServer(async (req, res) => {
       "access-control-allow-origin": "*",
       "x-accel-buffering": "no"
     });
-    res.write(`event: ready\ndata: ${JSON.stringify({ type: "ready", payload: { roomId: room.id, createdAt: room.createdAt, status: room.status } })}\n\n`);
-    if (room.context) {
-      res.write(`event: context\ndata: ${JSON.stringify({ type: "context", payload: room.context })}\n\n`);
+    res.write(`event: ready\ndata: ${JSON.stringify({ type: "ready", payload: { sessionId: session.id, createdAt: session.createdAt, status: session.status } })}\n\n`);
+    if (session.context) {
+      res.write(`event: context\ndata: ${JSON.stringify({ type: "context", payload: session.context })}\n\n`);
     }
-    if (room.status) {
-      res.write(`event: status\ndata: ${JSON.stringify({ type: "status", payload: room.status })}\n\n`);
+    if (session.status) {
+      res.write(`event: status\ndata: ${JSON.stringify({ type: "status", payload: session.status })}\n\n`);
     }
-    room.clients.add(res);
-    req.on("close", () => room.clients.delete(res));
+    session.clients.add(res);
+    req.on("close", () => session.clients.delete(res));
     return;
   }
 
-  const contextRoomId = roomIdFromPath(url.pathname, "/context");
-  if (req.method === "GET" && contextRoomId) {
-    const room = createRoom(contextRoomId);
-    sendJson(res, 200, { ok: true, roomId: room.id, status: room.status, context: room.context, schemaExample });
+  const contextSessionId = sessionIdFromApiPath(url.pathname, "/context");
+  if (req.method === "GET" && contextSessionId) {
+    const session = createSession(contextSessionId);
+    sendJson(res, 200, { ok: true, sessionId: session.id, status: session.status, context: session.context, schemaExample });
     return;
   }
 
-  const statusRoomId = roomIdFromPath(url.pathname, "/status");
-  if (req.method === "POST" && statusRoomId) {
-    const room = createRoom(statusRoomId);
+  const statusSessionId = sessionIdFromApiPath(url.pathname, "/status");
+  if (req.method === "POST" && statusSessionId) {
+    const session = createSession(statusSessionId);
     try {
       const body = await readJsonBody(req);
       const validation = validateStatus(body);
@@ -359,41 +365,41 @@ const server = createServer(async (req, res) => {
         sendJson(res, 422, { ok: false, errors: validation.errors });
         return;
       }
-      const status = updateRoomStatus(room, validation.data);
-      sendJson(res, 202, { ok: true, roomId: room.id, status });
+      const status = updateSessionStatus(session, validation.data);
+      sendJson(res, 202, { ok: true, sessionId: session.id, status });
     } catch (error) {
       sendJson(res, error.status || 500, { ok: false, error: error.message });
     }
     return;
   }
 
-  if (req.method === "POST" && contextRoomId) {
-    const room = createRoom(contextRoomId);
+  if (req.method === "POST" && contextSessionId) {
+    const session = createSession(contextSessionId);
     try {
       const body = await readJsonBody(req);
-      updateRoomStatus(room, { stage: "validating", message: "Agent payload received. Validating strict schema.", progress: 68 });
+      updateSessionStatus(session, { stage: "validating", message: "Agent payload received. Validating strict schema.", progress: 68 });
       const validation = validateContext(body);
       if (!validation.ok) {
-        updateRoomStatus(room, { stage: "error", message: "Agent payload failed schema validation.", progress: 42 });
-        sendEvent(room, "error", { message: "Agent payload failed schema validation.", errors: validation.errors });
+        updateSessionStatus(session, { stage: "error", message: "Agent payload failed schema validation.", progress: 42 });
+        sendEvent(session, "error", { message: "Agent payload failed schema validation.", errors: validation.errors });
         sendJson(res, 422, { ok: false, errors: validation.errors, schemaExample });
         return;
       }
-      updateRoomStatus(room, { stage: "generating", message: "Schema passed. Generating the personal website preview.", progress: 84 });
-      room.context = {
+      updateSessionStatus(session, { stage: "generating", message: "Schema passed. Generating the personal website preview.", progress: 84 });
+      session.context = {
         ...validation.data,
         receivedAt: new Date().toISOString()
       };
-      sendEvent(room, "context", room.context);
-      updateRoomStatus(room, { stage: "complete", message: `Website generated for ${room.context.name}.`, progress: 100 });
-      sendJson(res, 202, { ok: true, roomId: room.id, accepted: room.context });
+      sendEvent(session, "context", session.context);
+      updateSessionStatus(session, { stage: "complete", message: `Website generated for ${session.context.name}.`, progress: 100 });
+      sendJson(res, 202, { ok: true, sessionId: session.id, accepted: session.context });
     } catch (error) {
       sendJson(res, error.status || 500, { ok: false, error: error.message });
     }
     return;
   }
 
-  if (req.method === "GET" && /^\/(?:room|site)\/[a-zA-Z0-9-]{4,80}$/.test(url.pathname)) {
+  if (req.method === "GET" && /^\/(?:session|room|site)\/[a-zA-Z0-9-]{4,80}$/.test(url.pathname)) {
     await serveStatic(res, "/");
     return;
   }
