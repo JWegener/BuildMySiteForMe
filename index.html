@@ -736,7 +736,6 @@
           <textarea id="agentPrompt" spellcheck="false"></textarea>
           <div class="actions">
             <button class="primary" id="copyPrompt" type="button">Copy prompt</button>
-            <button class="ghost" id="simulate" type="button">Simulate agent handoff</button>
           </div>
         </div>
 
@@ -1082,48 +1081,6 @@ ${JSON.stringify(examplePayload, null, 2)}`;
         progress: 24
       }).catch((error) => addFeed(`Copy status failed: ${error.message}`, "error"));
       setTimeout(() => { copyState.textContent = "ready"; }, 1600);
-    });
-
-    document.getElementById("simulate").addEventListener("click", async () => {
-      try {
-        await postStatus({
-          stage: "agent-started",
-          message: "Simulated agent connected. Gathering personal context.",
-          progress: 32
-        });
-        await postStatus({
-          stage: "gathering",
-          message: "Simulated agent is collecting interests, skills, projects, and taste.",
-          progress: 45
-        });
-        await postStatus({
-          stage: "approval-needed",
-          message: "Simulated agent is asking for public-sharing approval.",
-          progress: 55
-        });
-        await postStatus({
-          stage: "approved",
-          message: "Public context approved. Sending final payload.",
-          progress: 64
-        });
-        await postContext({
-          name: "Avery Hart",
-          summary: "Avery is a fast-thinking product builder with a fondness for sharp tools, humane systems, and collaborators who make ideas visible quickly.",
-          interests: ["agentic tools", "personal software", "internet-native publishing"],
-          projects: ["A live personal website builder", "tiny tools with strong opinions"],
-          skills: ["product judgment", "rapid prototyping", "tasteful systems design"],
-          taste: ["terse copy", "editorial layouts", "interfaces that feel alive"],
-          traits: ["high-signal", "playfully decisive", "prototype-hungry"],
-          testimonials: [
-            { quote: "Avery asks for the impossible, then casually accepts a working demo twenty minutes later.", signed: "my AI" },
-            { quote: "Has never met a blank canvas they could not turn into a product-shaped dare.", signed: "my AI" },
-            { quote: "Would probably make a settings page feel like a secret clubhouse.", signed: "my AI" }
-          ]
-        }, "Simulated agent");
-      } catch (error) {
-        addFeed(`Simulated payload rejected: ${error.message}`, "error");
-        setProgress(24);
-      }
     });
 
     document.getElementById("applyPayload").addEventListener("click", async () => {
