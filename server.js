@@ -16,17 +16,17 @@ const mimeTypes = {
 };
 
 const schemaExample = {
-  name: "Maya Chen",
-  summary: "Maya is a crisp, curious builder who likes fast iteration and unusually clear notes.",
-  interests: ["AI tools", "small useful software", "design systems"],
-  projects: ["A personal site generated live from agent context"],
-  skills: ["product thinking", "prototyping", "writing"],
-  taste: ["direct copy", "sharp contrast", "quietly playful details"],
-  traits: ["high-signal", "warm operator mode", "fast-moving"],
+  name: "Use the user's real approved public name",
+  summary: "Use a concise real summary that the user approved for public display.",
+  interests: ["real approved interest"],
+  projects: ["real approved project"],
+  skills: ["real approved skill"],
+  taste: ["real approved taste note"],
+  traits: ["real approved trait", "real approved trait", "real approved trait"],
   testimonials: [
-    { quote: "Maya turns vague ideas into working buttons before the coffee cools.", signed: "my AI" },
-    { quote: "Extremely dangerous around an empty repo and a clear objective.", signed: "my AI" },
-    { quote: "Would debug a toaster if it had an API.", signed: "my AI" }
+    { quote: "Real humorous approved quote about the user.", signed: "my AI" },
+    { quote: "Real humorous approved quote about the user.", signed: "my AI" },
+    { quote: "Real humorous approved quote about the user.", signed: "my AI" }
   ]
 };
 

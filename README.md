@@ -66,17 +66,17 @@ Strict payload shape:
 
 ```json
 {
-  "name": "Maya Chen",
-  "summary": "A concise summary of who this person is.",
-  "interests": ["AI tools", "small useful software"],
-  "projects": ["A live personal website"],
-  "skills": ["product thinking", "prototyping"],
-  "taste": ["direct copy", "sharp contrast"],
-  "traits": ["high-signal", "warm", "fast-moving"],
+  "name": "Use the user's real approved public name",
+  "summary": "Use a concise real summary that the user approved for public display.",
+  "interests": ["real approved interest"],
+  "projects": ["real approved project"],
+  "skills": ["real approved skill"],
+  "taste": ["real approved taste note"],
+  "traits": ["real approved trait", "real approved trait", "real approved trait"],
   "testimonials": [
-    { "quote": "Funny quote one.", "signed": "my AI" },
-    { "quote": "Funny quote two.", "signed": "my AI" },
-    { "quote": "Funny quote three.", "signed": "my AI" }
+    { "quote": "Real humorous approved quote about the user.", "signed": "my AI" },
+    { "quote": "Real humorous approved quote about the user.", "signed": "my AI" },
+    { "quote": "Real humorous approved quote about the user.", "signed": "my AI" }
   ]
 }
 ```

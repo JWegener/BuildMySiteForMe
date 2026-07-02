@@ -564,62 +564,6 @@
       margin-bottom: 8px;
     }
 
-    .below {
-      display: grid;
-      grid-template-columns: 0.8fr 1.2fr;
-      gap: 24px;
-      padding: 10px 0 70px;
-      min-width: 0;
-    }
-
-    .explain,
-    .payload {
-      min-width: 0;
-      padding: 22px;
-      background: rgba(20, 20, 18, 0.8);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-    }
-
-    .explain h2,
-    .payload h2 {
-      margin: 0 0 12px;
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: clamp(27px, 3vw, 42px);
-      line-height: 1;
-      overflow-wrap: anywhere;
-    }
-
-    .explain p,
-    .payload p {
-      color: var(--muted);
-      line-height: 1.55;
-      margin: 0 0 18px;
-    }
-
-    .endpoint {
-      display: block;
-      overflow-x: auto;
-      padding: 14px;
-      color: var(--mint);
-      background: #111;
-      border: 1px solid rgba(0, 240, 200, 0.26);
-      border-radius: var(--radius);
-      font-family: "Courier New", monospace;
-      font-size: 13px;
-      white-space: nowrap;
-    }
-
-    .payload textarea {
-      min-height: 132px;
-      margin-bottom: 12px;
-      padding: 12px;
-      color: var(--ink);
-      background: #111;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-    }
-
     @media (max-width: 1060px) {
       .topbar {
         grid-template-columns: 1fr;
@@ -631,8 +575,7 @@
         justify-self: start;
       }
 
-      .hero,
-      .below {
+      .hero {
         grid-template-columns: 1fr;
       }
 
@@ -788,37 +731,6 @@
       </div>
     </section>
 
-    <section class="below" aria-label="How the product works">
-      <div class="explain">
-        <h2>The homepage is the waiting room and the canvas.</h2>
-        <p>
-          Every visit gets a fresh server-issued room number. The prompt carries status
-          and context endpoints, so the user's agent can report progress before posting
-          approved personal context into the right browser room.
-        </p>
-        <code class="endpoint" id="endpoint">POST /api/build-room/loading/status</code>
-      </div>
-
-      <div class="payload">
-        <h2>Test the ingest shape.</h2>
-        <p>Drop a strict context payload here and POST it to this room, the same way an agent would.</p>
-        <textarea id="payloadInput" spellcheck="false">{
-  "name": "Maya Chen",
-  "summary": "Maya is a crisp, curious builder who likes fast iteration, direct answers, and tools that make her feel more capable without making a production out of it.",
-  "interests": ["AI tools", "small useful software", "design systems"],
-  "projects": ["A personal site generated live from agent context"],
-  "skills": ["product thinking", "prototyping", "writing"],
-  "taste": ["direct copy", "sharp contrast", "quietly playful details"],
-  "traits": ["high-signal", "warm operator mode", "fast-moving"],
-  "testimonials": [
-    { "quote": "Maya turns vague ideas into working buttons before the coffee cools.", "signed": "my AI" },
-    { "quote": "Extremely dangerous around an empty repo and a clear objective.", "signed": "my AI" },
-    { "quote": "Would debug a toaster if it had an API.", "signed": "my AI" }
-  ]
-}</textarea>
-        <button class="primary" id="applyPayload" type="button">Apply payload</button>
-      </div>
-    </section>
   </main>
 
   <script>
@@ -835,22 +747,21 @@
     const roomStatus = document.getElementById("roomStatus");
     const feed = document.getElementById("feed");
     const meter = document.getElementById("meter");
-    const endpoint = document.getElementById("endpoint");
     const steps = Array.from(document.querySelectorAll(".step"));
     const testimonialGrid = document.getElementById("testimonialGrid");
 
-    const examplePayload = {
-      name: "Maya Chen",
-      summary: "Maya is a crisp, curious builder who likes fast iteration, direct answers, and tools that make her feel more capable without making a production out of it.",
-      interests: ["AI tools", "small useful software", "design systems"],
-      projects: ["A personal site generated live from agent context"],
-      skills: ["product thinking", "prototyping", "writing"],
-      taste: ["direct copy", "sharp contrast", "quietly playful details"],
-      traits: ["high-signal", "warm operator mode", "fast-moving"],
+    const contextPayloadTemplate = {
+      name: "Use my real approved public name",
+      summary: "Use a concise real summary that I approved for public display.",
+      interests: ["real approved interest"],
+      projects: ["real approved project"],
+      skills: ["real approved skill"],
+      taste: ["real approved taste note"],
+      traits: ["real approved trait", "real approved trait", "real approved trait"],
       testimonials: [
-        { quote: "Maya turns vague ideas into working buttons before the coffee cools.", signed: "my AI" },
-        { quote: "Extremely dangerous around an empty repo and a clear objective.", signed: "my AI" },
-        { quote: "Would debug a toaster if it had an API.", signed: "my AI" }
+        { quote: "Real humorous approved quote about me.", signed: "my AI" },
+        { quote: "Real humorous approved quote about me.", signed: "my AI" },
+        { quote: "Real humorous approved quote about me.", signed: "my AI" }
       ]
     };
 
@@ -864,7 +775,6 @@
 
       document.getElementById("sessionId").textContent = sessionId;
       document.getElementById("stageTitle").textContent = `live-preview://room-${sessionId}`;
-      endpoint.textContent = `POST ${statusUrl} -> POST ${ingestUrl}`;
       promptEl.value = buildPrompt();
 
       if (shouldReplaceUrl && location.protocol !== "file:") {
@@ -906,7 +816,7 @@ Use stage values like "gathering", "approval-needed", "approved", and "generatin
 
 After I approve the public information, POST exactly this strict JSON shape to the ingest endpoint. Do not add unknown fields. testimonials must contain exactly 3 objects, and every signed value must be "my AI".
 
-${JSON.stringify(examplePayload, null, 2)}`;
+${JSON.stringify(contextPayloadTemplate, null, 2)}`;
     }
 
     function addFeed(message, code = "recv") {
@@ -980,23 +890,6 @@ ${JSON.stringify(examplePayload, null, 2)}`;
       roomStatus.textContent = `Built ${firstName(name)}'s site from agent context`;
       setProgress(100);
       addFeed(`Applied strict context for ${name}. Site preview regenerated.`, "build");
-    }
-
-    async function postContext(data, source) {
-      addFeed(`${source} payload POST started.`, "post");
-      setProgress(58);
-      const response = await fetch(ingestUrl, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        const details = Array.isArray(result.errors) ? result.errors.join(" ") : result.error || "Unknown validation error.";
-        throw new Error(details);
-      }
-      addFeed("Backend accepted payload. Waiting for room event.", "202");
-      return result;
     }
 
     async function postStatus(update) {
@@ -1077,21 +970,6 @@ ${JSON.stringify(examplePayload, null, 2)}`;
         progress: 24
       }).catch((error) => addFeed(`Copy status failed: ${error.message}`, "error"));
       setTimeout(() => { copyState.textContent = "ready"; }, 1600);
-    });
-
-    document.getElementById("applyPayload").addEventListener("click", async () => {
-      try {
-        const data = JSON.parse(document.getElementById("payloadInput").value);
-        await postStatus({
-          stage: "approved",
-          message: "Manual approved payload submitted.",
-          progress: 62
-        });
-        await postContext(data, "Manual");
-      } catch (error) {
-        addFeed(`Payload rejected: ${error.message}`, "error");
-        setProgress(24);
-      }
     });
 
     async function init() {
