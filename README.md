@@ -87,6 +87,9 @@ Strict payload shape:
   "skills": ["real approved skill, superpower, or unusually specific competence"],
   "taste": ["real approved taste note, preference, anti-preference, or house style"],
   "traits": ["real approved trait", "real approved trait", "real approved trait"],
+  "photos": [
+    { "url": "approved public image URL", "alt": "public-safe alt text", "caption": "optional public-safe caption", "source": "optional source label" }
+  ],
   "testimonials": [
     { "quote": "Warm, specific quote about the user's personality, values, or work.", "signed": "my AI" },
     { "quote": "Warm quote about the user's taste, habits, or recurring themes.", "signed": "my AI" },

@@ -24,6 +24,13 @@ const schemaExample = {
   skills: ["real approved skill, superpower, or unusually specific competence"],
   taste: ["real approved taste note, preference, anti-preference, or house style"],
   traits: ["real approved trait", "real approved trait", "real approved trait"],
+  photos: [
+    {
+      url: "https://example.com/public-photo.jpg",
+      alt: "Approved public photo of the user",
+      caption: "Optional public-safe caption"
+    }
+  ],
   testimonials: [
     { quote: "Warm, specific quote about the user's personality, values, or work.", signed: "my AI" },
     { quote: "Warm quote about the user's taste, habits, or recurring themes.", signed: "my AI" },
@@ -176,6 +183,7 @@ function validateContext(input) {
     "skills",
     "taste",
     "traits",
+    "photos",
     "testimonials",
     "links",
     "contact"
@@ -196,6 +204,7 @@ function validateContext(input) {
   requireStringArray(input, "skills", errors, 0, 12);
   requireStringArray(input, "taste", errors, 1, 12);
   requireStringArray(input, "traits", errors, 3, 5);
+  validatePhotos(input.photos, errors);
   validateTestimonials(input.testimonials, errors);
 
   if (input.links !== undefined && !isPlainObject(input.links) && !isStringArray(input.links)) {
@@ -217,6 +226,7 @@ function validateContext(input) {
       skills: cleanArray(input.skills || []),
       taste: cleanArray(input.taste),
       traits: cleanArray(input.traits),
+      photos: cleanPhotos(input.photos),
       testimonials: input.testimonials.map((item) => ({
         quote: item.quote.trim(),
         signed: "my AI"
@@ -271,8 +281,62 @@ function validateTestimonials(value, errors) {
   });
 }
 
+function validatePhotos(value, errors) {
+  if (value === undefined) return;
+  if (!Array.isArray(value)) {
+    errors.push("photos must be an array.");
+    return;
+  }
+  if (value.length > 6) {
+    errors.push("photos can include at most 6 items.");
+    return;
+  }
+
+  value.forEach((item, index) => {
+    if (!isPlainObject(item)) {
+      errors.push(`photos[${index}] must be an object.`);
+      return;
+    }
+    if (!isHttpUrl(item.url)) {
+      errors.push(`photos[${index}].url must be an http(s) URL.`);
+    }
+    if (item.alt !== undefined && (typeof item.alt !== "string" || item.alt.trim().length > 180)) {
+      errors.push(`photos[${index}].alt must be a string up to 180 characters.`);
+    }
+    if (item.caption !== undefined && (typeof item.caption !== "string" || item.caption.trim().length > 180)) {
+      errors.push(`photos[${index}].caption must be a string up to 180 characters.`);
+    }
+    if (item.source !== undefined && (typeof item.source !== "string" || item.source.trim().length > 180)) {
+      errors.push(`photos[${index}].source must be a string up to 180 characters.`);
+    }
+  });
+}
+
 function cleanArray(value) {
   return (value || []).map((item) => (typeof item === "string" ? item.trim() : "")).filter(Boolean);
+}
+
+function cleanPhotos(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item) => isPlainObject(item) && isHttpUrl(item.url))
+    .slice(0, 6)
+    .map((item) => ({
+      url: item.url.trim(),
+      alt: typeof item.alt === "string" && item.alt.trim() ? item.alt.trim() : "Public photo",
+      caption: typeof item.caption === "string" ? item.caption.trim() : "",
+      source: typeof item.source === "string" ? item.source.trim() : ""
+    }));
+}
+
+function isHttpUrl(value) {
+  if (typeof value !== "string" || value.trim().length > 1200) return false;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 function isPlainObject(value) {

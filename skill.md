@@ -115,6 +115,9 @@ Do not add unknown fields. `testimonials` must contain exactly 3 objects, and ev
   "skills": ["real approved skill", "real approved superpower"],
   "taste": ["real approved taste note", "real approved anti-preference"],
   "traits": ["real approved trait", "real approved trait", "real approved trait"],
+  "photos": [
+    { "url": "approved public image URL", "alt": "public-safe alt text", "caption": "optional caption", "source": "optional source label" }
+  ],
   "testimonials": [
     { "quote": "Warm, specific quote about the user's personality, values, or work.", "signed": "my AI" },
     { "quote": "Warm quote about the user's taste, habits, or recurring themes.", "signed": "my AI" },
@@ -136,6 +139,9 @@ curl -X POST "https://build-my-site-for-me.onrender.com/api/build-session/SESSIO
     "skills": ["skill one", "skill two"],
     "taste": ["taste note one", "taste note two"],
     "traits": ["trait one", "trait two", "trait three"],
+    "photos": [
+      { "url": "https://example.com/public-photo.jpg", "alt": "Approved public photo", "caption": "Public-safe caption", "source": "Self-hosted" }
+    ],
     "testimonials": [
       { "quote": "Quote one.", "signed": "my AI" },
       { "quote": "Quote two.", "signed": "my AI" },

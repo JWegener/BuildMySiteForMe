@@ -568,6 +568,26 @@
         repeating-linear-gradient(45deg, rgba(23,19,15,.18) 0 8px, transparent 8px 16px);
     }
 
+    .portrait-photo {
+      width: min(260px, 100%);
+      aspect-ratio: 1;
+      justify-self: center;
+      border: 2px solid rgba(23, 19, 15, 0.68);
+      border-radius: 50%;
+      overflow: hidden;
+      background: rgba(245, 241, 232, 0.18);
+      box-shadow:
+        0 18px 50px rgba(0, 0, 0, 0.26),
+        6px 6px 0 rgba(23, 19, 15, 0.62);
+    }
+
+    .portrait-photo img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
     .portrait h2 {
       margin: 0;
       font-family: Georgia, "Times New Roman", serif;
@@ -647,6 +667,37 @@
     .trait span {
       color: #5d5044;
       font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .photo-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+      gap: 10px;
+    }
+
+    .photo-card {
+      min-width: 0;
+      margin: 0;
+      background: #fff9ed;
+      border: 1px solid rgba(23, 19, 15, 0.18);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 4px 4px 0 rgba(23, 19, 15, 0.16);
+    }
+
+    .photo-card img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      background: rgba(23, 19, 15, 0.08);
+    }
+
+    .photo-card figcaption {
+      padding: 8px 9px 9px;
+      color: #4b4037;
+      font-size: 12px;
       line-height: 1.35;
     }
 
@@ -732,6 +783,10 @@
 
       .trait-grid {
         grid-template-columns: 1fr 1fr;
+      }
+
+      .photo-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .stage-top {
@@ -848,6 +903,13 @@
       skills: ["real approved skill, superpower, or unusually specific competence that reveals personality"],
       taste: ["real approved taste note, preference, anti-preference, or house style"],
       traits: ["real approved trait", "real approved trait", "real approved trait"],
+      photos: [
+        {
+          url: "https://example.com/public-photo.jpg",
+          alt: "Approved public photo of me",
+          caption: "Optional public-safe caption"
+        }
+      ],
       testimonials: [
         { quote: "Warm, specific quote about my personality, values, or work.", signed: "my AI" },
         { quote: "Warm quote about my taste, habits, or recurring themes.", signed: "my AI" },
@@ -916,6 +978,28 @@ Use this Session ID: ${sessionId}`;
       return Array.isArray(items) && items.length ? items.join(", ") : fallback;
     }
 
+    function normalizePhotos(items) {
+      if (!Array.isArray(items)) return [];
+      return items
+        .filter((item) => item && typeof item === "object" && isSafeImageUrl(item.url))
+        .slice(0, 6)
+        .map((item) => ({
+          url: item.url,
+          alt: typeof item.alt === "string" && item.alt.trim() ? item.alt.trim() : "Public photo",
+          caption: typeof item.caption === "string" ? item.caption.trim() : "",
+          source: typeof item.source === "string" ? item.source.trim() : ""
+        }));
+    }
+
+    function isSafeImageUrl(value) {
+      try {
+        const url = new URL(String(value), location.href);
+        return url.protocol === "http:" || url.protocol === "https:";
+      } catch {
+        return false;
+      }
+    }
+
     function renderTestimonials(items) {
       const testimonialGrid = document.getElementById("testimonialGrid");
       if (!testimonialGrid) return;
@@ -971,6 +1055,8 @@ Use this Session ID: ${sessionId}`;
       const tagline = traits.length
         ? `${firstName(name)} is ${traits.slice(0, 3).join(", ")}.`
         : "A personal site generated from agent context.";
+      const photos = normalizePhotos(data.photos);
+      const primaryPhoto = photos[0];
       const testimonials = Array.isArray(data.testimonials) && data.testimonials.length ? data.testimonials : [
         { quote: "Waiting for the agent to say something warm and oddly accurate.", signed: "my AI" }
       ];
@@ -978,7 +1064,9 @@ Use this Session ID: ${sessionId}`;
       return `
         <div class="site-preview" id="sitePreview">
           <aside class="portrait">
-            <div class="portrait-art" aria-hidden="true"></div>
+            ${primaryPhoto
+              ? `<div class="portrait-photo"><img src="${escapeHtml(primaryPhoto.url)}" alt="${escapeHtml(primaryPhoto.alt)}" loading="eager" decoding="async"></div>`
+              : `<div class="portrait-art" aria-hidden="true"></div>`}
             <div>
               <h2 id="previewName">${escapeHtml(name)}</h2>
               <p id="previewTagline">${escapeHtml(tagline)}</p>
@@ -999,6 +1087,16 @@ Use this Session ID: ${sessionId}`;
               <div class="trait"><b>Skills</b><span id="traitSkills">${escapeHtml(listText(data.skills, "Unassigned"))}</span></div>
               <div class="trait"><b>Taste</b><span id="traitTaste">${escapeHtml(listText(data.taste, "Unassigned"))}</span></div>
             </div>
+            ${photos.length > 1 ? `
+              <div class="photo-strip" aria-label="Public photos">
+                ${photos.slice(1).map((photo) => `
+                  <figure class="photo-card">
+                    <img src="${escapeHtml(photo.url)}" alt="${escapeHtml(photo.alt)}" loading="lazy" decoding="async">
+                    ${photo.caption || photo.source ? `<figcaption>${escapeHtml([photo.caption, photo.source].filter(Boolean).join(" - "))}</figcaption>` : ""}
+                  </figure>
+                `).join("")}
+              </div>
+            ` : ""}
             <div class="quote-grid" id="testimonialGrid" aria-label="AI testimonials">
               ${testimonials.map((item) => `
                 <blockquote class="quote">${escapeHtml(`"${item.quote}"`)}<cite>- ${escapeHtml(item.signed || "my AI")}</cite></blockquote>
