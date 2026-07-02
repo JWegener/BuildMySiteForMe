@@ -739,10 +739,7 @@
           </div>
         </div>
 
-        <div class="feed" aria-live="polite" id="feed">
-          <div class="feed-row"><strong>00:00</strong><span>Requesting a unique room number.</span></div>
-          <div class="feed-row"><strong>00:01</strong><span>Preparing live status stream.</span></div>
-        </div>
+        <div class="feed" aria-live="polite" id="feed"></div>
       </div>
 
       <div class="stage">
@@ -1048,7 +1045,6 @@ ${JSON.stringify(examplePayload, null, 2)}`;
         roomSource.addEventListener("ready", (event) => {
           const data = JSON.parse(event.data);
           addFeed(`Room ${data.payload.roomId} is listening.`, "ready");
-          handleStatus(data.payload.status);
         });
         roomSource.addEventListener("status", (event) => {
           const data = JSON.parse(event.data);
@@ -1102,6 +1098,7 @@ ${JSON.stringify(examplePayload, null, 2)}`;
       renderTestimonials([]);
       setProgress(8);
       try {
+        addFeed("Preparing live status stream.", "boot");
         await ensureRoom();
         connectRoom();
       } catch (error) {
